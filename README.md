@@ -1,6 +1,9 @@
 # PostApi
 PostApi is a program that allows the user to connect to various social media accounts and afterwards post content on these accounts. This tool should make it simpler to gather all of the different accounts in one place in order to make a clean management possible.
 
+## Website
+The Website is still very very (extreme) 'Work in Progress'. It will get a complete rework after some thing are cleared and finished. 
+
 ## How it works
 The plan is to make it connect to the different APIs that social media platforms offer and let the user publish content on these via PostAPi.
 
