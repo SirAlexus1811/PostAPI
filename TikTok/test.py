@@ -82,6 +82,6 @@ publish_response = requests.post(
 ).json()
 
 if publish_response.get("data", {}).get("status") == "success":
-    print("Video wurde erfolgreich gepostet! 🎉")
+    print("Video wurde erfolgreich gepostet!")
 else:
     print("Fehler beim Posten des Videos.")
