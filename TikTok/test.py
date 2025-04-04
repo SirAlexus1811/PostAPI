@@ -5,8 +5,8 @@ from flask import Flask, request
 import webbrowser
 
 # TikTok API Credentials (ersetzen mit deinen Werten)
-CLIENT_ID = "awvfz0xgqugbthi2"
-CLIENT_SECRET = "YHmHroiMJczBCEkXTGUZFO8wS1Z0yuGd"
+CLIENT_ID = "Token"
+CLIENT_SECRET = "ApiSecret"
 REDIRECT_URI = "http://localhost:3000/auth/callback"
 
 # Flask Webserver zur Code-Abfrage
