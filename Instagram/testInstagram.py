@@ -1,4 +1,4 @@
-#This will be the file for Instagram
+#This will be the test file for Instagram
 import requests
 
 ACCESS_TOKEN = "DEIN_LONG_LIVED_ACCESS_TOKEN"
