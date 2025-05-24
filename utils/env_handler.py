@@ -2,6 +2,10 @@ import os
 
 from trio import current_effective_deadline
 
+def get_env_entry():
+    print("DEBUG: get_env called!")
+    
+
 def update_env_entry(env_fPath, key, new_keyvalue):
     #If .env file does not exist 
     if not os.path.exists(env_fPath):
