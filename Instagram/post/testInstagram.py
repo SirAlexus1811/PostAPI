@@ -7,6 +7,7 @@ ENV_PATH = ".env/instagram.env"
 IMAGE_URL = "https://raw.githubusercontent.com/SirAlexus1811/PostAPI-Testdata/main/test.jpg"
 CAPTION = "My first test Post on Instagram via Graph-API !"
 #https://github.com/SirAlexus1811/PostAPI-Testdata/blob/main/test.jpg
+
 #Load env file if it exists
 if os.path.exists(ENV_PATH):
     load_dotenv(dotenv_path=ENV_PATH)
@@ -31,7 +32,7 @@ print(response_data)
 if "id" in response_data:
     media_id = response_data["id"]
 
-    #Pulish Post
+    #Publish Post
     publish_url = f"https://graph.instagram.com/v22.0/{IG_ID}/media_publish"
     publish_payload = {
         "creation_id": media_id,
