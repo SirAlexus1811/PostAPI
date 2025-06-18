@@ -2,3 +2,4 @@
 .vscode/
 testdata/
 utilstest/
+__pycache__/
