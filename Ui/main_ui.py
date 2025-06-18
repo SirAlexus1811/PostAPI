@@ -57,7 +57,7 @@ class PostAPIApp(tk.Tk):
         tk.Label(self.content_frame, text="Settings / Config", font=("Arial", 18)).pack(pady=10)
 
         # Git config
-
+        tk.Label(self.content_frame, text="Git Settings:", font=("Arial", 14)).pack()
         #Git Username
         frame_user = tk.Frame(self.content_frame) # New frame for user git settings
         frame_user.pack(pady=5)
