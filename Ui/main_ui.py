@@ -1,8 +1,9 @@
+from doctest import debug
 import tkinter as tk
 from tkinter import ttk
 
 #for safing settings
-from dotenv import dotenv_values, load_dotenv
+from dotenv import dotenv_values, load_dotenv, set_key
 from utils.env_handler import update_env_entry
 from utils.git_handler import ENV_PATH as GIT_ENV_PATH
 
@@ -26,23 +27,34 @@ class PostAPIApp(tk.Tk):
         self.content_frame = tk.Frame(self.container, bg="#fff")
         self.content_frame.pack(side="right", fill="both", expand=True)
 
+        self.build_menu()
+
+        # === Startpage ===
+        self.show_settings()
+
+    def build_menu(self):
+        for widget in self.menu_frame.winfo_children():
+            widget.destroy()
+        self.buttons = []
+        
         # === Menü-Buttons ===
         self.buttons = []
         menu_items = [
-            ("1. Einstellungen", self.show_settings),
+            ("1. Settings", self.show_settings),
             ("2. Instagram", self.show_instagram),
             ("3. TikTok", self.show_tiktok),
-            ("4. Automatisierung", self.show_automation),
-            ("5. Credits", self.show_credits)
+            ("4. Client-Mode", self.show_client_mode),
+            ("5. Credits", self.show_credits),
+            ("6. Exit", self.quit)
         ]
+
+        if debug_mode := dotenv_values(SETTINGS_ENV_PATH).get("DEBUG_MODE") == "True":
+            menu_items.append(("7. Debug", self.show_debug))
 
         for text, command in menu_items:
             btn = tk.Button(self.menu_frame, text=text, command=command, height=2)
             btn.pack(fill="x")
             self.buttons.append(btn)
-
-        # === Startansicht ===
-        self.show_settings()
 
     def clear_content(self):
         for widget in self.content_frame.winfo_children():
@@ -76,6 +88,16 @@ class PostAPIApp(tk.Tk):
         self.git_email_entry.insert(0, git_email)  # Set existing email 
         self.git_email_entry.pack(side="left", padx=5)
 
+        # Local Repo Path
+        frame_path = tk.Frame(self.content_frame)  # New frame for local repo path
+        frame_path.pack(pady=5)
+
+        tk.Label(frame_path, text="Local Repo Path:", width=40).pack(side="left")
+        self.local_repo_entry = tk.Entry(frame_path, width=40)
+        self.local_repo_entry.insert(0, dotenv_values(GIT_ENV_PATH).get("REPO_PATH") or "")  # Set existing local repo path
+        self.local_repo_entry.pack(side="left", padx=5)
+
+        # Save Button for Git Settings
         tk.Button(self.content_frame, text="Save Git Settings", command=self.save_settings_GIT).pack(pady=10)
 
         #Debug Box
@@ -87,7 +109,11 @@ class PostAPIApp(tk.Tk):
         debug_cb = tk.Checkbutton(frame_debug, text="Activate Debug-Mode", variable=self.debug_var)
         debug_cb.pack(pady=10)
 
-        tk.Button(self.content_frame, text="Save Debug Settings", command=lambda: update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(self.debug_var.get()))).pack(pady=10)
+        tk.Button(self.content_frame, text="Save Debug Settings", command=self.save_settings_DEBUG).pack(pady=10)
+
+        #Message Box for Settings
+        self.frame_message = tk.Frame(self.content_frame)  # New frame for message box
+        self.frame_message.pack(pady=5)
 
     def show_instagram(self):
         self.clear_content()
@@ -97,40 +123,60 @@ class PostAPIApp(tk.Tk):
         self.ig_token_entry = tk.Entry(self.content_frame)
         self.ig_token_entry.pack()
 
-        tk.Label(self.content_frame, text="Bild-URL:").pack()
+        tk.Label(self.content_frame, text="Local Picture-URL:").pack()
         self.ig_image_entry = tk.Entry(self.content_frame)
         self.ig_image_entry.pack()
 
-        tk.Label(self.content_frame, text="Account Auswahl:").pack()
+        tk.Label(self.content_frame, text="Select Account:").pack()
         self.ig_account_list = ttk.Combobox(self.content_frame, values=["Account 1", "Account 2"])
         self.ig_account_list.pack()
 
-        tk.Button(self.content_frame, text="Bild posten", command=self.post_image).pack(pady=10)
+        tk.Button(self.content_frame, text="Post Picture", command=self.post_image).pack(pady=10)
 
     def show_tiktok(self):
         self.clear_content()
-        tk.Label(self.content_frame, text="TikTok (in Entwicklung)", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="TikTok (WIP)", font=("Arial", 18)).pack(pady=10)
 
-    def show_automation(self):
+    def show_client_mode(self):
         self.clear_content()
-        tk.Label(self.content_frame, text="Automatisierung (geplant)", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="Client Mode (For Servers)", font=("Arial", 18)).pack(pady=10)
 
     def show_credits(self):
         self.clear_content()
         tk.Label(self.content_frame, text="Credits", font=("Arial", 18)).pack(pady=10)
-        tk.Label(self.content_frame, text="Autor: Siralexus\nEmail: alexgeschaeftlich@posteo.com").pack(pady=20)
+        tk.Label(self.content_frame, text="Author: Siralexus\nEmail: alexgeschaeftlich@posteo.com").pack(pady=20)
+
+    def show_debug(self):
+        self.clear_content()
+        tk.Label(self.content_frame, text="Debug-Infos", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="Here will be the Debug Infos.").pack(pady=20)
 
     # === Functions ===
     def save_settings_GIT(self):
         git_username = self.git_user_entry.get()
         git_email = self.git_email_entry.get()
-        if git_username and git_email:
+        local_repo_path = self.local_repo_entry.get()
+        if git_username and git_email and local_repo_path:
             # Update the .env file with the new Git settings; no need to check if they are already set as the function will handle that
             update_env_entry(GIT_ENV_PATH, "GIT_USERNAME", git_username)
             update_env_entry(GIT_ENV_PATH, "GIT_EMAIL", git_email)
-            tk.Label(self.content_frame, text=f"Git settings safed: {git_username}, {git_email}").pack()
+            update_env_entry(GIT_ENV_PATH, "REPO_PATH", local_repo_path)
+            # Remove previous messages
+            for widget in self.frame_message.winfo_children():
+              widget.destroy()
+            tk.Label(self.frame_message, text=f"Git settings saved:\n{git_username}\n{git_email}\n{local_repo_path}\n").pack()
         else:
-            tk.Label(self.content_frame, text="Please Enter something.").pack()
+            tk.Label(self.frame_message, text="Please Enter something.").pack()
+
+    def save_settings_DEBUG(self):
+        debug_mode = self.debug_var.get()
+        update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
+        # Remove previous messages
+        for widget in self.frame_message.winfo_children():
+            widget.destroy()
+        tk.Label(self.frame_message, text=f"Debug mode set to: {debug_mode}").pack()
+        self.build_menu()  # Rebuild the menu to reflect changes    
+
 
     def post_image(self):
         token = self.ig_token_entry.get()
