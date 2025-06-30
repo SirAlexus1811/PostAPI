@@ -3,6 +3,7 @@ from git import Repo, GitCommandError
 import os
 from dotenv import load_dotenv
 from utils.env_handler import update_env_entry
+import logging #for the logging function in debug section
 
 # Path to the .env file
 ENV_PATH = ".env/git.env"
@@ -29,15 +30,15 @@ def set_git_config():
         if GIT_USERNAME and repo.config_reader().get_value("user", "name", None) != GIT_USERNAME:
             config_writer.set_value("user", "name", GIT_USERNAME)
             changed = True
-            print(f"DEBUG: Git username set to {GIT_USERNAME}")
+            logging.info(f"GIT_HANLDER: Git username set to {GIT_USERNAME}")
         if GIT_EMAIL and repo.config_reader().get_value("user", "email", None) != GIT_EMAIL:
             config_writer.set_value("user", "email", GIT_EMAIL)
             changed = True
-            print(f"DEBUG: Git email set to {GIT_EMAIL}")
+            logging.info(f"GIT_HANLDER: Git email set to {GIT_EMAIL}")
         if changed:
-            print("DEBUG: Git config updated successfully.")
+            logging.info("GIT_HANLDER: Git config updated successfully.")
         else:
-            print("DEBUG: No changes made to Git config.")
+            logging.info("GIT_HANLDER: No changes made to Git config.")
     finally:
         config_writer.release()
 
@@ -45,25 +46,25 @@ def set_git_config():
 def create_branch(branch_name):
     try:
         repo.git.checkout("-b", branch_name)
-        print(f"DEBUG: Branch '{branch_name}' created and checked out.")
+        logging.info(f"GIT_HANLDER: Branch '{branch_name}' created and checked out.")
     except GitCommandError as e:
-        print(f"DEBUG: Error creating branch '{branch_name}': {e}")
+        logging.info(f"GIT_HANLDER: Error creating branch '{branch_name}': {e}")
 
 # Checkout Branch Func
 def checkout_branch(branch_name):
     try:
         repo.git.checkout(branch_name)
-        print(f"DEBUG: Branch '{branch_name}' checked out.")
+        logging.info(f"GIT_HANLDER: Branch '{branch_name}' checked out.")
     except GitCommandError as e:
-        print(f"DEBUG: Error checking out branch '{branch_name}': {e}")
+        logging.info(f"GIT_HANLDER: Error checking out branch '{branch_name}': {e}")
 
 # Add all changes func
 def add_all_changes():
     try:
         repo.git.add(A=True)
-        print("DEBUG: All changes added to staging area.")
+        logging.info("GIT_HANLDER: All changes added to staging area.")
     except GitCommandError as e:
-        print(f"DEBUG: Error adding changes: {e}")
+        logging.info(f"GIT_HANLDER: Error adding changes: {e}")
 
 # Commit changes func
 def commit_changes(commit_message):
@@ -71,31 +72,22 @@ def commit_changes(commit_message):
         if not commit_message:
             commit_message = "No Commit Message Provided"
         repo.git.commit(m=commit_message)
-        print(f"DEBUG: Changes committed with message: '{commit_message}'")
+        logging.info(f"GIT_HANLDER: Changes committed with message: '{commit_message}'")
     except GitCommandError as e:
-        print(f"DEBUG: Error committing changes: {e}")
+        logging.info(f"GIT_HANLDER: Error committing changes: {e}")
 
 # Push changes func
 def push_changes(branch_name):
     try:
         repo.git.push("origin", branch_name)
-        print(f"DEBUG: Changes pushed to branch '{branch_name}'.")
+        logging.info(f"GIT_HANLDER: Changes pushed to branch '{branch_name}'.")
     except GitCommandError as e:
-        print(f"DEBUG: Error pushing changes to branch '{branch_name}': {e}")
+        logging.info(f"GIT_HANLDER: Error pushing changes to branch '{branch_name}': {e}")
 
 def git_status():
     try:
         status = repo.git.status()
-        print("DEBUG: Current Git Status:")
-        print(status)
+        logging.info("GIT_HANLDER: Current Git Status:")
+        logging.info(status)
     except GitCommandError as e:
-        print(f"DEBUG: Error getting git status: {e}")
-
-
-#    try:
-#        repo.git.config("user.name", GIT_USERNAME)
-#        repo.git.config("user.email", GIT_EMAIL)
-#        print(f"DEBUG: Git config set to {GIT_USERNAME} <{GIT_EMAIL}>")
-#    except GitCommandError as e:
-#        print(f"DEBUG: Error setting git config: {e}")
-
+        logging.info(f"GIT_HANLDER: Error getting git status: {e}")

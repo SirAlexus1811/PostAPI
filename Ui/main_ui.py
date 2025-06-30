@@ -7,6 +7,10 @@ from dotenv import dotenv_values, load_dotenv, set_key
 from utils.env_handler import update_env_entry
 from utils.git_handler import ENV_PATH as GIT_ENV_PATH
 
+#for logging function in debug section
+from utils.tkinter_log_handler import TkinterTextHandler
+import logging
+
 #Env Path Settings
 SETTINGS_ENV_PATH = ".env/settings.env"
 
@@ -15,6 +19,15 @@ class PostAPIApp(tk.Tk):
         super().__init__()
         self.title("Post API App")
         self.geometry("900x600")
+        self.log_history = [] # USed for saving
+
+        # === Start Logger ===
+        self.debug_handler = TkinterTextHandler(None, self.log_history)  # Initialize with None, will be set later
+        self.debug_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+        logging.getLogger().addHandler(self.debug_handler)
+        logging.getLogger().setLevel(logging.DEBUG)
+        logging.info("UI: Hello PostAPI!")
+        logging.info("UI: Started Logger")
 
         # === Main Container Frame ===
         self.container = ttk.Frame(self)
@@ -55,10 +68,21 @@ class PostAPIApp(tk.Tk):
             btn = tk.Button(self.menu_frame, text=text, command=command, height=2)
             btn.pack(fill="x")
             self.buttons.append(btn)
+        
+        # Debug Message
+        logging.info("UI: Built Menu")
 
     def clear_content(self):
+        #Delete Logging-Handler if there is one exisiting
+        if hasattr(self, "debug_handler"):
+            self.debug_handler.set_widget(None)  # Clear the widget reference
+
+        #Del all widgets in content_frame
         for widget in self.content_frame.winfo_children():
             widget.destroy()
+        
+        # Debug Message
+        logging.info("UI: Cleared Content Frame")
 
     def show_settings(self):
         #Load Dotenv and show existing settings
@@ -115,6 +139,9 @@ class PostAPIApp(tk.Tk):
         self.frame_message = tk.Frame(self.content_frame)  # New frame for message box
         self.frame_message.pack(pady=5)
 
+        #Debug Message
+        logging.info("UI: Opened Settings Page")
+
     def show_instagram(self):
         self.clear_content()
         tk.Label(self.content_frame, text="Instagram Post-Manager", font=("Arial", 18)).pack(pady=10)
@@ -133,23 +160,47 @@ class PostAPIApp(tk.Tk):
 
         tk.Button(self.content_frame, text="Post Picture", command=self.post_image).pack(pady=10)
 
+        # Debug Message
+        logging.info("UI: Opened Instagram Page")
+
     def show_tiktok(self):
         self.clear_content()
         tk.Label(self.content_frame, text="TikTok (WIP)", font=("Arial", 18)).pack(pady=10)
 
+        #Debug Message
+        logging.info("UI: Opened TikTok Page (WIP)")
+
     def show_client_mode(self):
         self.clear_content()
         tk.Label(self.content_frame, text="Client Mode (For Servers)", font=("Arial", 18)).pack(pady=10)
+
+        #Debug Message
+        logging.info("UI: Opened Client Mode Page (WIP)")
 
     def show_credits(self):
         self.clear_content()
         tk.Label(self.content_frame, text="Credits", font=("Arial", 18)).pack(pady=10)
         tk.Label(self.content_frame, text="Author: Siralexus\nEmail: alexgeschaeftlich@posteo.com").pack(pady=20)
 
+        #Debug Message
+        logging.info("UI: Opened Credits Page")
+
     def show_debug(self):
         self.clear_content()
         tk.Label(self.content_frame, text="Debug-Infos", font=("Arial", 18)).pack(pady=10)
-        tk.Label(self.content_frame, text="Here will be the Debug Infos.").pack(pady=20)
+        self.debug_console = tk.Text(self.content_frame, height=20, width=80, state="normal", bg="#222", fg="#0f0")
+        self.debug_console.pack(pady=10, fill="both", expand=True) # Expandable to fill the space
+    
+        # Log-Historie anzeigen
+        self.debug_console.delete("1.0", "end")
+        for msg in self.log_history:
+            self.debug_console.insert("end", msg + "\n")
+        self.debug_console.config(state="disabled")
+
+        #Set Debug Console as widget for logging
+        self.debug_handler.set_widget(self.debug_console)
+
+        logging.info("UI: Opened Debug Console")
 
     # === Functions ===
     def save_settings_GIT(self):
@@ -168,6 +219,9 @@ class PostAPIApp(tk.Tk):
         else:
             tk.Label(self.frame_message, text="Please Enter something.").pack()
 
+        # Debug Message
+        logging.info("UI: Saved Git Settings")
+
     def save_settings_DEBUG(self):
         debug_mode = self.debug_var.get()
         update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
@@ -177,12 +231,15 @@ class PostAPIApp(tk.Tk):
         tk.Label(self.frame_message, text=f"Debug mode set to: {debug_mode}").pack()
         self.build_menu()  # Rebuild the menu to reflect changes    
 
+        #Debug Message
+        logging.info("UI: Saved Debug Settings")
+
 
     def post_image(self):
         token = self.ig_token_entry.get()
         image_url = self.ig_image_entry.get()
         account = self.ig_account_list.get()
-        print(f"Poste Bild an {account} mit URL {image_url} und Token {token}")
+        logging.info(f"UI: Poste Bild an {account} mit URL {image_url} und Token {token}")
 
 
 if __name__ == "__main__":
