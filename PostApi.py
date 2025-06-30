@@ -1,4 +1,4 @@
-#Here will be the starter for this programm
+#Here will be the starter for this Program
 #Import UI
 from Ui.main_ui import PostAPIApp
 
@@ -26,8 +26,8 @@ class PostAPIController:
         self.debug_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
         logging.getLogger().addHandler(self.debug_handler)
         logging.getLogger().setLevel(logging.DEBUG)
-        logging.info("UI: Hello PostAPI!")
-        logging.info("UI: Started Logger")
+        logging.info("Ctr: Hello PostAPI!")
+        logging.info("Ctr: Started Logger")
 
     # Runs the main application loop
     def run(self):
@@ -40,7 +40,7 @@ class PostAPIController:
 
     def checkRequirements(self):
         # This function can be used to check if all requirements are met
-        logging.info("UI: Checking requirements...")
+        logging.info("Ctr: Checking requirements...")
         requirements_path = "requirements.txt"
         missing = []
         # Mapping requirements.txt -> Importname
@@ -54,7 +54,7 @@ class PostAPIController:
             "tkinter": "tkinter"
         }
         if not os.path.exists(requirements_path):
-            logging.warning("requirements.txt not found!")
+            logging.warning("Ctr: requirements.txt not found!")
             return
 
         with open(requirements_path) as req_file:
@@ -73,10 +73,10 @@ class PostAPIController:
                     missing.append(pkg)
 
         if missing:
-            logging.warning(f"Missing pakages: {', '.join(missing)}")
+            logging.warning(f"Ctr: Missing pakages: {', '.join(missing)}")
             print(f"Please install all missing pakages with: pip install -r requirements.txt")
         else:
-            logging.info("All requirements are installed :).")
+            logging.info("Ctr: All requirements are installed :).")
 
 #Main function to start the application
 if __name__ == "__main__":

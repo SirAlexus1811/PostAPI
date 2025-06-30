@@ -42,7 +42,7 @@ class PostAPIApp(tk.Tk):
         self.build_menu()
 
         # === Startpage ===
-        self.show_settings()
+        self.show_Menu()
 
     def build_menu(self):
         for widget in self.menu_frame.winfo_children():
@@ -52,16 +52,18 @@ class PostAPIApp(tk.Tk):
         # === Menü-Buttons ===
         self.buttons = []
         menu_items = [
-            ("1. Settings", self.show_settings),
-            ("2. Instagram", self.show_instagram),
-            ("3. TikTok", self.show_tiktok),
-            ("4. Client-Mode", self.show_client_mode),
-            ("5. Credits", self.show_credits),
-            ("6. Exit", self.exit_app)
+            ("PostAPI Menu", self.show_Menu),  # Title
+            ("1. How to Use", self.show_HowToUse),  # How to Use
+            ("2. Settings", self.show_settings),
+            ("3. Instagram", self.show_instagram),
+            ("4. TikTok", self.show_tiktok),
+            ("5. Client-Mode", self.show_client_mode),
+            ("6. Credits", self.show_credits),
+            ("7. Exit", self.exit_app)
         ]
 
         if debug_mode := dotenv_values(SETTINGS_ENV_PATH).get("DEBUG_MODE") == "True":
-            menu_items.append(("7. Debug", self.show_debug))
+            menu_items.append(("8. Debug", self.show_debug))
 
         for text, command in menu_items:
             btn = tk.Button(self.menu_frame, text=text, command=command, height=2)
@@ -83,6 +85,28 @@ class PostAPIApp(tk.Tk):
         
         # Debug Message
         logging.info("UI: Cleared Content Frame")
+
+    def show_Menu(self):
+        #Clear content and show the main menu
+        self.clear_content()
+        tk.Label(self.content_frame, text="PostAPI Menu", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="Please select an option from the left menu.").pack(pady=10)
+
+        #Debug Message
+        logging.info("UI: Opened Main Menu")
+
+    def show_HowToUse(self):
+        #Clear content and show How to Use
+        self.clear_content()
+        tk.Label(self.content_frame, text="How to Use", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="1. Setup this Program via the Settings Tab.\n"
+                                          "2. Use the Instagram menu to post pictures and Videos on Instagram. (WIP)\n"
+                                          "3. Use the TikTok menu to post pictures and videos on TikTok. (WIP)\n"
+                                          "4. Use the Client-Mode to use a server instance of our server setups. (Very WIP)\n"
+                                          "5. Check the Credits for author information.").pack(pady=10)
+
+        #Debug Message
+        logging.info("UI: Opened How to Use Page")
 
     def show_settings(self):
         #Load Dotenv and show existing settings
