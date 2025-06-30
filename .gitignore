@@ -1,5 +1,6 @@
 .env/
 .vscode/
 testdata/
+logs/
 utilstest/
 __pycache__/

@@ -6,28 +6,27 @@ from tkinter import ttk
 from dotenv import dotenv_values, load_dotenv, set_key
 from utils.env_handler import update_env_entry
 from utils.git_handler import ENV_PATH as GIT_ENV_PATH
+import os # For Logfile saving and path handling
 
-#for logging function in debug section
-from utils.tkinter_log_handler import TkinterTextHandler
+#For Logging
 import logging
+
+from utils.tkinter_log_handler import TkinterLogHandler
 
 #Env Path Settings
 SETTINGS_ENV_PATH = ".env/settings.env"
 
 class PostAPIApp(tk.Tk):
-    def __init__(self):
+    debug_handler = None  # Placeholder for debug handler
+
+    def __init__(self, debug_handler, controller=None):
         super().__init__()
         self.title("Post API App")
         self.geometry("900x600")
-        self.log_history = [] # USed for saving
 
-        # === Start Logger ===
-        self.debug_handler = TkinterTextHandler(None, self.log_history)  # Initialize with None, will be set later
-        self.debug_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-        logging.getLogger().addHandler(self.debug_handler)
-        logging.getLogger().setLevel(logging.DEBUG)
-        logging.info("UI: Hello PostAPI!")
-        logging.info("UI: Started Logger")
+        #Set the given Attributes
+        self.debug_handler = debug_handler
+        self.controller = controller
 
         # === Main Container Frame ===
         self.container = ttk.Frame(self)
@@ -58,7 +57,7 @@ class PostAPIApp(tk.Tk):
             ("3. TikTok", self.show_tiktok),
             ("4. Client-Mode", self.show_client_mode),
             ("5. Credits", self.show_credits),
-            ("6. Exit", self.quit)
+            ("6. Exit", self.exit_app)
         ]
 
         if debug_mode := dotenv_values(SETTINGS_ENV_PATH).get("DEBUG_MODE") == "True":
@@ -75,7 +74,8 @@ class PostAPIApp(tk.Tk):
     def clear_content(self):
         #Delete Logging-Handler if there is one exisiting
         if hasattr(self, "debug_handler"):
-            self.debug_handler.set_widget(None)  # Clear the widget reference
+            if self.debug_handler is not None:
+                self.debug_handler.set_widget(None)  # Clear the widget reference
 
         #Del all widgets in content_frame
         for widget in self.content_frame.winfo_children():
@@ -193,12 +193,13 @@ class PostAPIApp(tk.Tk):
     
         # Log-Historie anzeigen
         self.debug_console.delete("1.0", "end")
-        for msg in self.log_history:
+        for msg in TkinterLogHandler.log_history:
             self.debug_console.insert("end", msg + "\n")
         self.debug_console.config(state="disabled")
 
         #Set Debug Console as widget for logging
-        self.debug_handler.set_widget(self.debug_console)
+        if self.debug_handler is not None:
+            self.debug_handler.set_widget(self.debug_console)
 
         logging.info("UI: Opened Debug Console")
 
@@ -234,14 +235,16 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI: Saved Debug Settings")
 
+    #Exit Func
+    def exit_app(self):
+        logging.info("UI: Exiting Application")
+        # Save log history before exiting
+        TkinterLogHandler.save_log_history()
+        self.quit()
+
 
     def post_image(self):
         token = self.ig_token_entry.get()
         image_url = self.ig_image_entry.get()
         account = self.ig_account_list.get()
         logging.info(f"UI: Poste Bild an {account} mit URL {image_url} und Token {token}")
-
-
-if __name__ == "__main__":
-    app = PostAPIApp()
-    app.mainloop()

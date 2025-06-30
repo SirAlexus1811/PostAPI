@@ -1,11 +1,14 @@
 import logging
+import os
+import datetime
 
 #Handler that is needed to make the Debug Section work
-class TkinterTextHandler(logging.Handler):
-    def __init__(self, text_widget, log_history):
+class TkinterLogHandler(logging.Handler):
+    log_history = []  # Central Class variable to store log history
+
+    def __init__(self, text_widget):
         super().__init__()
         self.text_widget = text_widget
-        self.log_history = log_history  # Used for saving log history
 
     def set_widget(self, text_widget):
         self.text_widget = text_widget
@@ -22,3 +25,20 @@ class TkinterTextHandler(logging.Handler):
                 self.text_widget.see("end")
                 self.text_widget.config(state="disabled")
             self.text_widget.after(0, append)
+
+    #Saves log history to a file - Will be called on close
+    @classmethod
+    def save_log_history(cls): 
+        logging.info("Main.PY: Saving log history")
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_filename = datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.txt")
+        log_path = os.path.join(logs_dir, log_filename)
+        with open(log_path, "w") as f:
+            for msg in TkinterLogHandler.log_history:
+                f.write(msg + "\n")
+        # Only Keep 2 newest log files
+        logs = sorted([f for f in os.listdir(logs_dir) if f.startswith("log_") and f.endswith(".txt")])
+        while len(logs) > 2:
+            os.remove(os.path.join(logs_dir, logs[0]))
+            logs.pop(0)
