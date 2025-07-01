@@ -2,6 +2,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+# "Muster-File" - Example File for posting a picture on Instagram
 
 ENV_PATH = ".env/instagram.env"
 IMAGE_URL = "https://raw.githubusercontent.com/SirAlexus1811/PostAPI-Testdata/main/test.jpg"
