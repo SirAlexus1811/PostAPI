@@ -1,14 +1,20 @@
 # PostApi
 PostApi is a program that allows the user to connect to various social media accounts and afterwards post content on these accounts. This tool should make it simpler to gather all of the different accounts in one place in order to make a clean management possible.
 
+## Important Note
+I don't know if it works on a freshly set up Linux system, I still gotta test it. If u encounter any bugs feel free to report them to me on any possible way.
+
 ## Website
 The Website is in a early stage of development. There still will be added some things during the development of PostApi.
 
 ## How it works
 The plan is to make it connect to the different APIs that social media platforms offer and let the user publish content on these via PostApi. There will be a detailed documentation once one platform support is finished.
 
+## UI
+The UI is in a early stage of development. It is meant to be that simple so it is User friendly. The Instagram tab in the UI is still in development and has yet no function at all. The Settings tab is working already. The settings will be saved in .env files. I also still have to check what happens when you download that program on a new setup up linux system. 
+
 ### Instagram
-This is a tricky to be honest. I had to trick the Graph API into posting, because the Graph API needs the picture or video to be in the Internet and not a locale file. So I created a Github Account with a repo where the Program will upload the pictures and then PostAPI sents the post request with a link pointing at the github content. I know its not the best way, but for someone, who doesn't own a domain or website, is this a proper way to still post on Instagram.
+This is a bit tricky to be honest. I had to trick the Graph API into posting, because the Graph API needs the picture or video to be in the Internet and not a locale file. So I created a Github Account with a repo where the Program will upload the pictures and then PostAPI sends the post request with a link pointing at the github content. I know its not the best way, but for someone, who doesn't own a domain or website, is this a proper way to still post on Instagram.
 
 ## Planned Support for these Social Media Platforms
 ### Tiktok
