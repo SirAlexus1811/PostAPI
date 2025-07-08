@@ -2,7 +2,7 @@
 from git import Repo, GitCommandError
 import os
 from dotenv import load_dotenv
-from utils.env_handler import update_env_entry
+from utils.env_handler_OLD import update_env_entry
 import logging #for the logging function in debug section
 
 # Path to the .env file

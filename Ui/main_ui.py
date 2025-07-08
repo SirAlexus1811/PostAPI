@@ -1,10 +1,11 @@
-from doctest import debug
+#from doctest import debug
 import tkinter as tk
 from tkinter import ttk
 
 #for safing settings
 from dotenv import dotenv_values, load_dotenv, set_key
-from utils.env_handler import update_env_entry
+from utils import env_handler
+from utils.env_handler_OLD import update_env_entry
 from utils.git_handler import ENV_PATH as GIT_ENV_PATH
 import os # For Logfile saving and path handling
 
@@ -13,20 +14,34 @@ import logging
 
 from utils.tkinter_log_handler import TkinterLogHandler
 
-#Env Path Settings
-SETTINGS_ENV_PATH = ".env/settings.env"
+#Env Path Settings Not needed because first instance of env handler load this settings file
+#SETTINGS_ENV_PATH = ".env/settings.env"
 
 class PostAPIApp(tk.Tk):
     debug_handler = None  # Placeholder for debug handler
 
-    def __init__(self, debug_handler, controller=None):
+    def __init__(self, debug_handler, controller):
         super().__init__()
         self.title("Post API App")
-        self.geometry("900x600")
+        self.geometry("1200x800")
 
         #Set the given Attributes
         self.debug_handler = debug_handler
         self.controller = controller
+        
+        #Setup Env Handler
+        if self.controller and hasattr(self.controller, "env_handler"):
+            self.controller.env_handler.load(".env/settings.env")
+        else:
+            logging.error("UI: No valid Controller or env_handler passed!")
+            raise ValueError("No valid Controller or env_handler passed!")
+        
+        # Set the icon if it exists
+        icon_path = "assets/icon.ico"
+        if os.path.exists(icon_path):
+            self.iconbitmap(icon_path)
+        else:
+            logging.warning(f"UI: Icon file {icon_path} not found. Using default icon.")
 
         # === Main Container Frame ===
         self.container = ttk.Frame(self)
@@ -62,7 +77,7 @@ class PostAPIApp(tk.Tk):
             ("7. Exit", self.exit_app)
         ]
 
-        if debug_mode := dotenv_values(SETTINGS_ENV_PATH).get("DEBUG_MODE") == "True":
+        if self.controller.env_handler.get("DEBUG_MODE", "False").lower() in ("true", "1", "yes"):
             menu_items.append(("8. Debug", self.show_debug))
 
         for text, command in menu_items:
@@ -153,7 +168,7 @@ class PostAPIApp(tk.Tk):
         frame_debug.pack(pady=5)
 
         tk.Label(frame_debug, text="Debug Settings:", font=("Arial", 14)).pack()
-        self.debug_var = tk.BooleanVar(value=(dotenv_values(SETTINGS_ENV_PATH).get("DEBUG_MODE") == "True"))
+        self.debug_var = tk.BooleanVar(value=(self.controller.env_handler.get("DEBUG_MODE") == "True"))
         debug_cb = tk.Checkbutton(frame_debug, text="Activate Debug-Mode", variable=self.debug_var)
         debug_cb.pack(pady=10)
 
@@ -249,7 +264,8 @@ class PostAPIApp(tk.Tk):
 
     def save_settings_DEBUG(self):
         debug_mode = self.debug_var.get()
-        update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
+        self.controller.env_handler.setV("DEBUG_MODE", str(debug_mode))  # Save the debug mode setting
+        #update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
         # Remove previous messages
         for widget in self.frame_message.winfo_children():
             widget.destroy()

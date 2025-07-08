@@ -5,7 +5,7 @@ from urllib.parse import urlencode  #Makes the URL request for GRAPH API
 from dotenv import load_dotenv      #Loads the env file
 
 #selfmade handlers
-from utils.env_handler import update_env_entry
+from utils.env_handler_OLD import update_env_entry
 
 #Path to .env File for Instagram
 ENV_PATH = ".env/instagram.env"

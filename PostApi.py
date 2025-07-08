@@ -2,6 +2,9 @@
 #Import UI
 from Ui.main_ui import PostAPIApp
 
+#Import for global Env_Handler
+from utils.env_handler import EnvHandler
+
 #Logging imports
 from utils.tkinter_log_handler import TkinterLogHandler
 import logging
@@ -13,9 +16,11 @@ import importlib.util
 #Controller for the PostAPI application
 class PostAPIController:
     debug_handler = None  # Placeholder for debug handler
+    env_handler = None  # Placeholder for environment handler
 
     def __init__(self):
         # Initialize the logger
+        self.env_handler = EnvHandler(".env/settings.env")  # Load environment variables from .env file
         self.startLogger()
         self.checkRequirements()
         
