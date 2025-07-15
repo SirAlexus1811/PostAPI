@@ -1,93 +1,76 @@
-#Simple Git handler that will be used to push imgs to the Postapi Storage Repo. GitPython will be used for this.
-from git import Repo, GitCommandError
 import os
-from dotenv import load_dotenv
-from utils.env_handler_OLD import update_env_entry
-import logging #for the logging function in debug section
+import logging
+from git import Repo, GitCommandError
 
-# Path to the .env file
-ENV_PATH = ".env/git.env"
+class GitHandler:
+    # Initialize the GitHandler with the environment handler
+    def __init__(self, env_handler):
+        self.env_handler = env_handler
+        self.repo_path = self.env_handler.get("REPO_PATH")
+        if not self.repo_path:
+            logging.error("GIT_HANDLER: REPO_PATH not found in environment variables.")
+            raise ValueError("REPO_PATH not found!")
+        self.repo = Repo(self.repo_path)
+        self.set_git_config()
 
-# Load the .env file if it exists
-if os.path.exists(ENV_PATH):
-    load_dotenv(dotenv_path=ENV_PATH)
+    # Set Git Username and Email from environment variables
+    def set_git_config(self):
+        git_username = self.env_handler.get("GIT_USERNAME")
+        git_email = self.env_handler.get("GIT_EMAIL")
+        if git_username and self.repo.config_reader().get_value("user", "name", None) != git_username:
+            self.repo.config_writer().set_value("user", "name", git_username).release()
+            logging.info(f"GIT_HANDLER: Git username set to {git_username}")
+        if git_email and self.repo.config_reader().get_value("user", "email", None) != git_email:
+            self.repo.config_writer().set_value("user", "email", git_email).release()
+            logging.info(f"GIT_HANDLER: Git email set to {git_email}")
 
-#Setup Git Username and Email
-GIT_USERNAME = os.getenv("GIT_USERNAME") or input("Git Username: ").strip()
-GIT_EMAIL = os.getenv("GIT_EMAIL") or input("Git Email: ").strip()
+    # Create a new branch
+    def create_branch(self, branch_name):
+        try:
+            self.repo.git.checkout("-b", branch_name)
+            logging.info(f"GIT_HANDLER: Branch '{branch_name}' created and checked out.")
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error creating branch '{branch_name}': {e}")
 
-# Path to git repo #OLD path.abspath(os.path.join(os.path.dirname(__file__), "../"))
-#CAUTION: This path must point to the Repo outside the program folder. This is for posting purposes important, because the media will be uploaded into a cache repo and then posted.
-REPO_PATH = os.getenv("REPO_PATH") or input("Path to Git Repository: ").strip()
-repo = Repo(REPO_PATH)
+    # Checkout an existing branch
+    def checkout_branch(self, branch_name):
+        try:
+            self.repo.git.checkout(branch_name)
+            logging.info(f"GIT_HANDLER: Branch '{branch_name}' checked out.")
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error checking out branch '{branch_name}': {e}")
 
-# Set Local git config (not global)
-def set_git_config():
-    config_writer = repo.config_writer()
-    changed = False
+    # Add all changes to the staging area
+    def add_all_changes(self):
+        try:
+            self.repo.git.add(A=True)
+            logging.info("GIT_HANDLER: All changes added to staging area.")
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error adding changes: {e}")
 
-    try:
-        if GIT_USERNAME and repo.config_reader().get_value("user", "name", None) != GIT_USERNAME:
-            config_writer.set_value("user", "name", GIT_USERNAME)
-            changed = True
-            logging.info(f"GIT_HANLDER: Git username set to {GIT_USERNAME}")
-        if GIT_EMAIL and repo.config_reader().get_value("user", "email", None) != GIT_EMAIL:
-            config_writer.set_value("user", "email", GIT_EMAIL)
-            changed = True
-            logging.info(f"GIT_HANLDER: Git email set to {GIT_EMAIL}")
-        if changed:
-            logging.info("GIT_HANLDER: Git config updated successfully.")
-        else:
-            logging.info("GIT_HANLDER: No changes made to Git config.")
-    finally:
-        config_writer.release()
-
-# Create Branch Func
-def create_branch(branch_name):
-    try:
-        repo.git.checkout("-b", branch_name)
-        logging.info(f"GIT_HANLDER: Branch '{branch_name}' created and checked out.")
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error creating branch '{branch_name}': {e}")
-
-# Checkout Branch Func
-def checkout_branch(branch_name):
-    try:
-        repo.git.checkout(branch_name)
-        logging.info(f"GIT_HANLDER: Branch '{branch_name}' checked out.")
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error checking out branch '{branch_name}': {e}")
-
-# Add all changes func
-def add_all_changes():
-    try:
-        repo.git.add(A=True)
-        logging.info("GIT_HANLDER: All changes added to staging area.")
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error adding changes: {e}")
-
-# Commit changes func
-def commit_changes(commit_message):
-    try:
-        if not commit_message:
-            commit_message = "No Commit Message Provided"
-        repo.git.commit(m=commit_message)
-        logging.info(f"GIT_HANLDER: Changes committed with message: '{commit_message}'")
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error committing changes: {e}")
-
-# Push changes func
-def push_changes(branch_name):
-    try:
-        repo.git.push("origin", branch_name)
-        logging.info(f"GIT_HANLDER: Changes pushed to branch '{branch_name}'.")
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error pushing changes to branch '{branch_name}': {e}")
-
-def git_status():
-    try:
-        status = repo.git.status()
-        logging.info("GIT_HANLDER: Current Git Status:")
-        logging.info(status)
-    except GitCommandError as e:
-        logging.info(f"GIT_HANLDER: Error getting git status: {e}")
+    #Commit changes func with message
+    def commit_changes(self, commit_message):
+        try:
+            if not commit_message:
+                commit_message = "No Commit Message Provided"
+            self.repo.git.commit(m=commit_message)
+            logging.info(f"GIT_HANDLER: Changes committed with message: '{commit_message}'")
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error committing changes: {e}")
+        
+    # Push changes to the remote repository
+    def push_changes(self, branch_name):
+        try:
+            self.repo.git.push("origin", branch_name)
+            logging.info(f"GIT_HANDLER: Changes pushed to branch '{branch_name}' successfully.")
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error pushing changes to branch '{branch_name}': {e}")
+    
+    #Dumps git status into log
+    def dump_git_status(self):
+        try:
+            status = self.repo.git.status()
+            logging.info(f"GIT_HANDLER: Git status: {status}")
+            logging.info(status)
+        except GitCommandError as e:
+            logging.error(f"GIT_HANDLER: Error getting git status: {e}")

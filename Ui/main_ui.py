@@ -6,7 +6,7 @@ from tkinter import ttk
 from dotenv import dotenv_values, load_dotenv, set_key
 from utils import env_handler
 from utils.env_handler_OLD import update_env_entry
-from utils.git_handler import ENV_PATH as GIT_ENV_PATH
+from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH
 import os # For Logfile saving and path handling
 
 #For Logging
