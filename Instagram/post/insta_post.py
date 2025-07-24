@@ -25,6 +25,9 @@ class instagram_poster:
         self.CAPTION = caption
         self.IMAGE_URL_LOCAL = img_path
 
+    #Get IG_ID and save it
+
+
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
     def uploadPicture2Git(self, local_URL):
         #Repo Config
@@ -32,7 +35,8 @@ class instagram_poster:
         git_username = self.env_handler.get("GIT_USERNAME")
         git_email = self.env_handler.get("GIT_EMAIL")
         filename = os.path.basename(local_URL)
-        branch = "main"  # Default branch, can be changed if needed -> There will be an Option in UI later on
+        #Branch Selection not added yet
+        #branch = "main"  # Default branch, can be changed if needed -> There will be an Option in UI later on
 
         if not repo_path or not git_username or not git_email:
             logging.error("INSTAGRAM_POSTER: REPO_PATH, GIT_USERNAME or GIT_EMAIL not found in environment variables.")
@@ -68,11 +72,14 @@ class instagram_poster:
             "caption": self.CAPTION,
             "access_token": self.access_token
         }
-        #Create Response
+        #Create Response returns the IG_ID
         response = requests.post(url, params=params)
         if response.status_code != 200:
             logging.error(f"INSTAGRAM_POSTER: Error creating upload URL: {response.text}")
             raise Exception(f"Error creating upload URL: {response.text}")
+        #Return and save to env file
+        self.env_handler.setV("IG_ACC_ID", self.ig_id)
+        self.env_handler.save()  # Save the updated environment variables
         return response.json().get("id")
     
     def postOnInstagram(self):

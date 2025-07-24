@@ -11,8 +11,11 @@ import os # For Logfile saving and path handling
 
 #For Logging
 import logging
-
 from utils.tkinter_log_handler import TkinterLogHandler
+
+#For Account Management
+import json
+ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 
 
 #Env Path Settings Not needed because first instance of env handler load this settings file
 #SETTINGS_ENV_PATH = ".env/settings.env"
@@ -37,7 +40,7 @@ class PostAPIApp(tk.Tk):
             raise ValueError("No valid Controller or env_handler passed!")
         
         # Set the icon if it exists
-        icon_path = "assets/icon.ico"
+        icon_path = "assets/iconLIN.xbm"
         if os.path.exists(icon_path):
             self.iconbitmap(icon_path)
         else:
@@ -124,10 +127,18 @@ class PostAPIApp(tk.Tk):
         logging.info("UI: Opened How to Use Page")
 
     def show_settings(self):
-        #Load Dotenv and show existing settings
-        git_username = dotenv_values(GIT_ENV_PATH).get("GIT_USERNAME") or ""
-        git_email = dotenv_values(GIT_ENV_PATH).get("GIT_EMAIL") or ""
+        #Load Existings Settings
+        #Switch to git.env to load git settings
+        self.controller.env_handler.load(".env/git.env")
+        git_username = self.controller.env_handler.get("GIT_USERNAME", "")
+        git_email = self.controller.env_handler.get("GIT_EMAIL", "")
+        repo_path = self.controller.env_handler.get("REPO_PATH", "")
+        
+        #Switch Back to settings.env
+        self.controller.env_handler.load(".env/settings.env")
+        acm_instagram_path = self.controller.env_handler.get("ACM_INSTA_PATH", "")
 
+        #Clear content and show settings
         self.clear_content()
         tk.Label(self.content_frame, text="Settings / Config", font=("Arial", 18)).pack(pady=10)
 
@@ -157,7 +168,7 @@ class PostAPIApp(tk.Tk):
 
         tk.Label(frame_path, text="Local Repo Path:", width=40).pack(side="left")
         self.local_repo_entry = tk.Entry(frame_path, width=40)
-        self.local_repo_entry.insert(0, dotenv_values(GIT_ENV_PATH).get("REPO_PATH") or "")  # Set existing local repo path
+        self.local_repo_entry.insert(0, repo_path)  # Set existing local repo path
         self.local_repo_entry.pack(side="left", padx=5)
 
         # Save Button for Git Settings
@@ -174,6 +185,17 @@ class PostAPIApp(tk.Tk):
 
         tk.Button(self.content_frame, text="Save Debug Settings", command=self.save_settings_DEBUG).pack(pady=10)
 
+        # ACM Settings (Account Management)
+        frame_acm = tk.Frame(self.content_frame)  # New frame for ACM settings
+        frame_acm.pack(pady=5)
+
+        tk.Label(frame_acm, text="Account Management Settings:", font=("Arial", 14)).pack()
+        self.acm_instagram = tk.Entry(frame_acm, width=50)
+        self.acm_instagram.insert(0, acm_instagram_path)
+        self.acm_instagram.pack(pady=5)
+
+        tk.Button(frame_acm, text="Save ACM Settings", command=self.save_settings_acm).pack(pady=10)
+
         #Message Box for Settings
         self.frame_message = tk.Frame(self.content_frame)  # New frame for message box
         self.frame_message.pack(pady=5)
@@ -181,23 +203,55 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI: Opened Settings Page")
 
+    #What i need : - List for accounts -> username_token map? ; filepath ; Caption ; 
     def show_instagram(self):
         self.clear_content()
-        tk.Label(self.content_frame, text="Instagram Post-Manager", font=("Arial", 18)).pack(pady=10)
 
-        tk.Label(self.content_frame, text="Access Token:").pack()
-        self.ig_token_entry = tk.Entry(self.content_frame)
-        self.ig_token_entry.pack()
+        # Main-Frame for Instagram
+        frame_insert = tk.Frame(self.content_frame)
+        frame_insert.pack(side="left", fill="both", expand=True, padx=20, pady=10)
 
-        tk.Label(self.content_frame, text="Local Picture-URL:").pack()
-        self.ig_image_entry = tk.Entry(self.content_frame)
-        self.ig_image_entry.pack()
+        tk.Label(frame_insert, text="Instagram Post", font=("Arial", 18)).pack(pady=10)
 
-        tk.Label(self.content_frame, text="Select Account:").pack()
-        self.ig_account_list = ttk.Combobox(self.content_frame, values=["Account 1", "Account 2"])
-        self.ig_account_list.pack()
+        # Filepath (Local URL)
+        tk.Label(frame_insert, text="Picture Filepath:").pack()
+        self.ig_image_entry = tk.Entry(frame_insert, width=50)
+        self.ig_image_entry.pack(pady=5)
 
-        tk.Button(self.content_frame, text="Post Picture", command=self.post_image).pack(pady=10)
+        # Caption
+        tk.Label(frame_insert, text="Caption:").pack()
+        self.ig_caption_entry = tk.Entry(frame_insert, width=50)
+        self.ig_caption_entry.pack(pady=5)
+
+        # Account-Selection
+        #tk.Label(frame_insert, text="Select Account").pack()
+        #self.ig_account_combobox = ttk.Combobox(frame_insert, values=[], width=47)
+        #self.ig_account_combobox.pack(pady=5)
+
+        # Post-Button
+        tk.Button(frame_insert, text="Post", command=self.post_image).pack(pady=20)
+
+        # Right Side: Account-Table
+        frame_accounts = tk.Frame(self.content_frame)
+        frame_accounts.pack(side="right", fill="y", padx=20, pady=10)
+
+        tk.Label(frame_accounts, text="Accounts", font=("Arial", 14)).pack()
+
+        # Table for Accounts
+        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "Token"), show="headings", height=10)
+        self.account_tree.heading("Username", text="Username")
+        self.account_tree.heading("Token", text="Access Token")
+        self.account_tree.pack(pady=5)
+
+        # Buttons for Account-management
+        btn_frame = tk.Frame(frame_accounts)
+        btn_frame.pack(pady=5)
+        tk.Button(btn_frame, text="Add", command=self.add_account).pack(side="left", padx=2)
+        tk.Button(btn_frame, text="Edit", command=self.edit_account).pack(side="left", padx=2)
+        tk.Button(btn_frame, text="Delete", command=self.delete_account).pack(side="left", padx=2)
+
+        # Load Accounts into table
+        self.load_accounts()
 
         # Debug Message
         logging.info("UI: Opened Instagram Page")
@@ -275,6 +329,69 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI: Saved Debug Settings")
 
+    #Saves ACM Settings
+    def save_settings_acm(self):
+        #Remove previous message
+        for widget in self.frame_message.winfo_children():
+            widget.destroy()        
+        acm_instagram_path = self.acm_instagram.get()
+        self.controller.env_handler.setV("ACM_INSTA_PATH", str(acm_instagram_path))  # Save the ACM Instagram file path
+        tk.Label(self.frame_message, text="ACM settings saved successfully.").pack()
+        
+        #Debug Message
+        logging.info("UI: Saved ACM Settings")
+    
+    #Loads the Accounts from the accounts.json file
+    def load_accounts(self):
+        #accounts = [] #Template var
+        filepath = self.controller.env_handler.get("ACM_INSTA_PATH", "")
+        #Load Instagram Accounts File
+        if os.path.exists(filepath):
+            with open(filepath, "r") as f:
+                try:
+                    self.accounts = json.load(f)
+                except json.JSONDecodeError as e:
+                    logging.error(f"UI: Error loading accounts from {filepath}: {e}")
+        else:
+            logging.warning(f"UI: Accounts file {filepath} not found. No accounts loaded.")
+
+        #Clear Table
+        self.account_tree.delete(*self.account_tree.get_children())
+        #Insert loaded accounts from Json file
+        for acc in self.accounts:
+            self.account_tree.insert("", "end", values=(acc.get("username", "Unknown"), acc.get("token", "No Token")))
+        
+
+    #def load_accounts(self):
+        # Beispiel: Accounts aus einer Datei oder env laden
+        # Hier Dummy-Daten:
+    #    accounts = 
+    #    for acc in accounts:
+    #        self.account_tree.insert("", "end", values=acc)
+        # Combobox aktualisieren
+    #    self.ig_account_combobox["values"] = [a[0] for a in accounts]
+
+    def add_account(self):
+        # Dialog zum Hinzufügen eines Accounts öffnen
+        pass
+
+    def edit_account(self):
+        # Dialog zum Bearbeiten des ausgewählten Accounts öffnen
+        pass
+
+    def delete_account(self):
+        # Ausgewählten Account löschen
+        pass
+
+    def post_image(self):
+        # Werte aus den Feldern holen und an instagram_poster übergeben
+        filepath = self.ig_image_entry.get()
+        caption = self.ig_caption_entry.get()
+    #    account = self.ig_account_combobox.get()
+        # Token aus der Tabelle holen (z.B. über account_tree.selection())
+        # Dann an instagram_poster übergeben und posten
+        pass
+
     #Exit Func
     def exit_app(self):
         logging.info("UI: Exiting Application")
@@ -282,9 +399,9 @@ class PostAPIApp(tk.Tk):
         TkinterLogHandler.save_log_history()
         self.quit()
 
-
-    def post_image(self):
-        token = self.ig_token_entry.get()
-        image_url = self.ig_image_entry.get()
-        account = self.ig_account_list.get()
-        logging.info(f"UI: Poste Bild an {account} mit URL {image_url} und Token {token}")
+#
+ #   def post_image(self):
+  #      token = self.ig_token_entry.get()
+   #     image_url = self.ig_image_entry.get()
+    #    account = self.ig_account_list.get()
+     #   logging.info(f"UI: Poste Bild an {account} mit URL {image_url} und Token {token}")
