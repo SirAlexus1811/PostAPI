@@ -5,6 +5,12 @@ from Ui.main_ui import PostAPIApp
 #Import for global Env_Handler
 from utils.env_handler import EnvHandler
 
+#Import for global Git_Handler
+from utils.git_handler import GitHandler
+
+#Import for global Instagram_Poster
+from Instagram.post.insta_post import instagram_poster
+
 #Logging imports
 from utils.tkinter_log_handler import TkinterLogHandler
 import logging
@@ -17,12 +23,16 @@ import importlib.util
 class PostAPIController:
     debug_handler = None  # Placeholder for debug handler
     env_handler = None  # Placeholder for environment handler
+    git_handler = None  # Placeholder for git handler
+    instagram_poster = None  # Placeholder for Instagram poster
 
     def __init__(self):
-        # Initialize the logger
-        self.env_handler = EnvHandler(".env/settings.env")  # Load environment variables from .env file
+        # Initialize Handlers, Posters and Logger
         self.startLogger()
         self.checkRequirements()
+        self.startEnvHandler()
+        self.startGitHandler()
+        self.startInstagramPoster()
         
     #Starts the logger - Will be called on start
     def startLogger(self):
@@ -33,6 +43,31 @@ class PostAPIController:
         logging.getLogger().setLevel(logging.DEBUG)
         logging.info("Ctr: Hello PostAPI!")
         logging.info("Ctr: Started Logger")
+
+    #Start Env_Handler
+    def startEnvHandler(self):
+        # Create an instance of the EnvHandler class
+        self.env_handler = EnvHandler(".env/settings.env")
+        # Debug Message
+        logging.info("Ctr: EnvHandler started with env path: {}".format(self.env_handler.env_fPath))
+
+    #Start Git_Handler
+    def startGitHandler(self):
+        self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
+        self.git_handler = GitHandler(
+            git_user=self.env_handler.get("GIT_USERNAME"),
+            git_mail=self.env_handler.get("GIT_EMAIL"),
+            repo_path=self.env_handler.get("REPO_PATH")
+        )
+        #Debug Message
+        logging.info("Ctr: GitHandler started with repo path: {}".format(self.git_handler.repo_path))
+
+    #Start Instagram Poster
+    def startInstagramPoster(self):
+        # Create an instance of the instagram_poster class
+        self.instagram_poster = instagram_poster(self.env_handler, self.git_handler)
+        # Debug Message
+        logging.info("Ctr: Instagram Poster started")
 
     # Runs the main application loop
     def run(self):

@@ -6,8 +6,8 @@ from tkinter import ttk
 #for safing settings
 from dotenv import dotenv_values, load_dotenv, set_key
 from utils import env_handler
-from utils.env_handler_OLD import update_env_entry
-from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH
+#from utils.env_handler_OLD import update_env_entry
+#from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH
 import os # For Logfile saving and path handling
 
 #For Logging
@@ -16,14 +16,12 @@ from utils.tkinter_log_handler import TkinterLogHandler
 
 #For Account Management
 import json
-ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 
+#ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 
 
 #Env Path Settings Not needed because first instance of env handler load this settings file
 #SETTINGS_ENV_PATH = ".env/settings.env"
 
 class PostAPIApp(tk.Tk):
-    debug_handler = None  # Placeholder for debug handler
-
     def __init__(self, debug_handler, controller):
         super().__init__()
         self.title("Post API App")
@@ -224,10 +222,8 @@ class PostAPIApp(tk.Tk):
         self.ig_caption_entry = tk.Entry(frame_insert, width=50)
         self.ig_caption_entry.pack(pady=5)
 
-        # Account-Selection
-        #tk.Label(frame_insert, text="Select Account").pack()
-        #self.ig_account_combobox = ttk.Combobox(frame_insert, values=[], width=47)
-        #self.ig_account_combobox.pack(pady=5)
+        # Account Selection
+        tk.Button(frame_insert, text="Select Accounts", command=self.open_account_selection).pack(pady=5)
 
         # Post-Button
         tk.Button(frame_insert, text="Post", command=self.post_image).pack(pady=20)
@@ -364,6 +360,40 @@ class PostAPIApp(tk.Tk):
         for acc in self.accounts:
             self.account_tree.insert("", "end", values=(acc.get("username", "Unknown"), acc.get("token", "No Token")))
         logging.info("UI: Loaded Accounts into Table")
+
+    # Opens a new window to select accounts for posting
+    def open_account_selection(self):
+        # Check if accounts are loaded
+        if not self.accounts:
+            logging.error("UI: No accounts to select.")
+            return
+        
+        # Create a new window for account selection
+        win = tk.Toplevel(self)
+        win.title("Select Accounts")
+        win.geometry("500x500")
+
+        logging.info("UI_TL1: Opened Select Account Window")
+
+        tk.Label(win, text="Select Accounts to Post", font=("Arial", 14)).pack(pady=10)
+        # Dictionary for Checkboxes
+        self.account_vars = {}
+        for acc in self.accounts:
+            var = tk.BooleanVar()
+            cb = tk.Checkbutton(win, text=acc.get("username", "Unknown"), variable=var)
+            cb.pack(anchor="w")
+            self.account_vars[acc.get("username")] = var
+
+        def save_selection():
+            self.selected_accounts = [user for user, var in self.account_vars.items() if var.get()]
+            win.destroy()
+            logging.info(f"UI_TL1: Selected accounts for posting: {self.selected_accounts}")
+
+        #Save Button
+        tk.Button(win, text="Save", command=save_selection).pack(pady=20)
+
+        #Debug Message
+        logging.info("UI_TL1: Select Accounts Window finished and Accounts Selected")
 
     #Opens a second window to add an Account to the instagram accounts file
     #Later we want to add a parameter so we can add tiktok accounts and tokens too
@@ -516,13 +546,36 @@ class PostAPIApp(tk.Tk):
         logging.info("UI_TL1: Del Account Window finished and account deleted")
 
     def post_image(self):
-        # Werte aus den Feldern holen und an instagram_poster übergeben
-        filepath = self.ig_image_entry.get()
-        caption = self.ig_caption_entry.get()
-    #    account = self.ig_account_combobox.get()
-        # Token aus der Tabelle holen (z.B. über account_tree.selection())
-        # Dann an instagram_poster übergeben und posten
-        pass
+        #Get Values from Entries
+        insta_cap = self.ig_caption_entry.get().strip()
+        insta_image = self.ig_image_entry.get().strip()
+        if not insta_cap or not insta_image:
+            logging.error("UI: Caption or Image path is empty.")
+            tk.Label(self.content_frame, text="Please fill in both fields.", fg="red").pack(pady=5)
+            return
+
+        if not self.selected_accounts:
+            logging.warning("UI: No Accounts selected!")
+            return
+        
+        #Debug Message
+        logging.info(f"UI: Beginn Posting Image: {filepath} with caption: {caption}.......")
+
+        #This is where the Instagram Poster Class does its job
+        for user in self.selected_accounts:
+            logging.info(f"UI: Posting '{filepath}' with caption '{caption}' on account '{user}'")
+            # Hier Instagram-API-Aufruf für jeden Account
+            # Example: self.controller.post_on_instagram(user, filepath, caption)
+        
+        #Call the Instagram Poster Class to handle the posting
+        #self.controller.instagram_poster.setIG_ID(self.selected_accounts[0])  # Set the first selected account as the IG_ID
+        self.controller.instagram_poster.setAccessToken(self.accounts[0]["token"])  # Set the access token for the first selected account
+        #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
+        #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
+        self.controller.instagram_poster.setupPost(insta_cap, insta_image)
+        self.controller.instagram_poster.uploadPicture2Git()
+        self.controller.instagram_poster.postImageOnInstagram()
+
 
     #Exit Func
     def exit_app(self):
@@ -530,10 +583,3 @@ class PostAPIApp(tk.Tk):
         # Save log history before exiting
         TkinterLogHandler.save_log_history()
         self.quit()
-
-#
- #   def post_image(self):
-  #      token = self.ig_token_entry.get()
-   #     image_url = self.ig_image_entry.get()
-    #    account = self.ig_account_list.get()
-     #   logging.info(f"UI: Poste Bild an {account} mit URL {image_url} und Token {token}")

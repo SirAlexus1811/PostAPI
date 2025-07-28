@@ -14,6 +14,10 @@ class instagram_poster:
     def __init__(self, env_handler, git_handler):
         self.env_handler = env_handler
         self.git_handler = git_handler
+
+        #Load correct instagram.env
+        self.env_handler.load(".env/instagram.env")
+
         self.access_token = self.env_handler.get("ACCESS_TOKEN")
         self.ig_id = self.env_handler.get("IG_ACC_ID")
         if not self.access_token or not self.ig_id:
@@ -29,12 +33,13 @@ class instagram_poster:
 
 
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
-    def uploadPicture2Git(self, local_URL):
+    def uploadPicture2Git(self):
         #Repo Config
+        self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
         repo_path = self.env_handler.get("REPO_PATH")
         git_username = self.env_handler.get("GIT_USERNAME")
         git_email = self.env_handler.get("GIT_EMAIL")
-        filename = os.path.basename(local_URL)
+        filename = os.path.basename(self.IMAGE_URL_LOCAL)
         #Branch Selection not added yet
         #branch = "main"  # Default branch, can be changed if needed -> There will be an Option in UI later on
 
@@ -44,7 +49,7 @@ class instagram_poster:
         
         #Create Target Path and copy the image into the repo
         target_path = os.path.join(repo_path, filename)
-        shutil.copy2(local_URL, target_path)
+        shutil.copy2(self.IMAGE_URL_LOCAL, target_path)
 
         #Use Githandler Instance
         self.git_handler.set_repo_path(repo_path)
