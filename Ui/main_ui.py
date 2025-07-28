@@ -1,4 +1,5 @@
 #from doctest import debug
+from re import A
 import tkinter as tk
 from tkinter import ttk
 
@@ -419,7 +420,7 @@ class PostAPIApp(tk.Tk):
         win.title("Edit Account")
         win.geometry("500x500")
 
-        logging.info("UI_TL1: Opened Add Account Window")
+        logging.info("UI_TL1: Opened Edit Account Window")
 
         tk.Label(win, text="Edit Instagram Account", font=("Arial", 14)).pack(pady=10)
 
@@ -477,8 +478,42 @@ class PostAPIApp(tk.Tk):
         logging.info("UI_TL1: Add Account Window finished and New Account Saved")
 
     def delete_account(self):
-        # Ausgewählten Account löschen
-        pass
+        #Check if There is an Account List
+        if not self.accounts:
+            logging.error("UI: No accounts to delete.")
+            return
+        
+        #Open New Window and configure it
+        win = tk.Toplevel(self)
+        win.title("Delete Account")
+        win.geometry("500x500")
+
+        logging.info("UI_TL1: Opened Delete Account Window")
+
+        tk.Label(win, text="Delete Instagram Account", font=("Arial", 14)).pack(pady=10)
+        usernames = [acc["username"] for acc in self.accounts]
+        selected_var = tk.StringVar()
+        combo = ttk.Combobox(win, textvariable=selected_var, values=usernames, state="readonly", width=28)
+        combo.pack(pady=10)
+
+        def delete_selected():
+            idx = combo.current()
+            if idx < 0:
+                tk.Label(win, text="Please select an account.", fg="red").pack()
+                return
+            username = self.accounts[idx]["username"]
+            del self.accounts[idx]
+            with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
+                json.dump(self.accounts, f, indent=4)
+            self.load_accounts()
+            win.destroy()
+            logging.info(f"UI_TL1: Account '{username}' deleted.")
+
+        #Delete Button
+        tk.Button(win, text="Delete", command=delete_selected, fg="red").pack(pady=10)  
+
+        #Debug Message
+        logging.info("UI_TL1: Del Account Window finished and account deleted")
 
     def post_image(self):
         # Werte aus den Feldern holen und an instagram_poster übergeben
