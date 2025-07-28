@@ -1,7 +1,7 @@
 #from doctest import debug
 from re import A
 import tkinter as tk
-from tkinter import ttk
+from tkinter import N, ttk
 
 #for safing settings
 from dotenv import dotenv_values, load_dotenv, set_key
@@ -235,8 +235,9 @@ class PostAPIApp(tk.Tk):
         tk.Label(frame_accounts, text="Accounts", font=("Arial", 14)).pack()
 
         # Table for Accounts
-        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "Token"), show="headings", height=10)
+        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "IG_ID", "Token"), show="headings", height=10)
         self.account_tree.heading("Username", text="Username")
+        self.account_tree.heading("IG_ID", text="Instagram ID")
         self.account_tree.heading("Token", text="Access Token")
         self.account_tree.pack(pady=5)
 
@@ -352,13 +353,37 @@ class PostAPIApp(tk.Tk):
                     logging.error(f"UI: Error loading accounts from {filepath}: {e}")
         else:
             logging.warning(f"UI: Accounts file {filepath} not found. No accounts loaded.")
+            # Create Popup to create a new file
+            def create_file():
+                with open(filepath, "w") as f:
+                    json.dump([], f, indent=4)
+                self.accounts = []
+                logging.info(f"UI: Created new accounts file at {filepath}")
+                popup.destroy()
+                self.load_accounts()  # Datei jetzt laden
+
+            popup = tk.Toplevel(self)
+            popup.title("Accounts-File is missing")
+            popup.geometry("500x500")
+            tk.Label(popup, text=f"The File '{filepath}' does not exist.\nCreate New File?", font=("Arial", 12)).pack(pady=20)
+            tk.Button(popup, text="Yes", command=create_file).pack(side="left", padx=20)
+            tk.Button(popup, text="No", command=popup.destroy).pack(side="right", padx=20)
+            return
 
         #Clear Table
         self.account_tree.delete(*self.account_tree.get_children())
         logging.info("UI: Cleared Account Table")
         #Insert loaded accounts from Json file
         for acc in self.accounts:
-            self.account_tree.insert("", "end", values=(acc.get("username", "Unknown"), acc.get("token", "No Token")))
+            self.account_tree.insert(
+                "",
+                "end",
+                values=(
+                    acc.get("username", "Unknown"),
+                    acc.get("IG_ID", "Not Set"),
+                    acc.get("token", "No Token")
+                )
+            )
         logging.info("UI: Loaded Accounts into Table")
 
     # Opens a new window to select accounts for posting
@@ -411,6 +436,10 @@ class PostAPIApp(tk.Tk):
         username_entry = tk.Entry(win, width=30)
         username_entry.pack(pady=5)
 
+        tk.Label(win, text="Instagram ID:").pack()
+        ig_id_entry = tk.Entry(win, width=30)
+        ig_id_entry.pack(pady=5)
+
         tk.Label(win, text="Access Token:").pack()
         token_entry = tk.Entry(win, width=30)
         token_entry.pack(pady=5)
@@ -418,10 +447,11 @@ class PostAPIApp(tk.Tk):
         #Define Save for inside the window
         def save():
             username = username_entry.get().strip()
+            ig_id = ig_id_entry.get().strip()
             token = token_entry.get().strip()
             if username and token:
                 # Add the new account to the accounts list
-                self.accounts.append({"username": username, "token": token})
+                self.accounts.append({"username": username, "IG_ID": ig_id, "token": token})
                 # Save the updated accounts to the file
                 with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
                     json.dump(self.accounts, f, indent=4)
@@ -466,6 +496,10 @@ class PostAPIApp(tk.Tk):
         username_entry = tk.Entry(win, width=30)
         username_entry.pack(pady=5)
 
+        tk.Label(win, text="New Instagram ID:").pack()
+        ig_id_entry = tk.Entry(win, width=30)
+        ig_id_entry.pack(pady=5)
+
         tk.Label(win, text="New Access Token:").pack()
         token_entry = tk.Entry(win, width=30)
         token_entry.pack(pady=5)
@@ -474,8 +508,10 @@ class PostAPIApp(tk.Tk):
             idx = combo.current()
             if idx >= 0:
                 username_entry.delete(0, tk.END)
+                ig_id_entry.delete(0, tk.END)
                 token_entry.delete(0, tk.END)
                 username_entry.insert(0, self.accounts[idx]["username"])
+                ig_id_entry.insert(0, self.accounts[idx]["IG_ID"])
                 token_entry.insert(0, self.accounts[idx]["token"])
             logging.info("UI_TL1: Filled fields with selected account data")
         
@@ -489,9 +525,11 @@ class PostAPIApp(tk.Tk):
                 tk.Label(win, text="Please Select Account", fg="red").pack()
                 return
             new_username = username_entry.get().strip()
+            new_ig_id = ig_id_entry.get().strip()
             new_token = token_entry.get().strip()
             if new_username and new_token:
                 self.accounts[idx]["username"] = new_username
+                self.accounts[idx]["IG_ID"] = new_ig_id
                 self.accounts[idx]["token"] = new_token
                 with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
                     json.dump(self.accounts, f, indent=4)

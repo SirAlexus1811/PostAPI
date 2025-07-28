@@ -4,3 +4,4 @@ testdata/
 logs/
 utilstest/
 __pycache__/
+data/
