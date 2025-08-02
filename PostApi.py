@@ -53,7 +53,11 @@ class PostAPIController:
 
     #Start Git_Handler
     def startGitHandler(self):
-        self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
+        if self.env_handler is not None:
+            self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
+        else:
+            logging.error("Ctr: EnvHandler is not initialized before GitHandler!")
+            raise RuntimeError("EnvHandler must be initialized before GitHandler.")
         self.git_handler = GitHandler(
             git_user=self.env_handler.get("GIT_USERNAME"),
             git_mail=self.env_handler.get("GIT_EMAIL"),

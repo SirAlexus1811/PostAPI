@@ -2,6 +2,7 @@
 from re import A
 import tkinter as tk
 from tkinter import N, ttk
+from tkinter import filedialog
 
 #for safing settings
 from dotenv import dotenv_values, load_dotenv, set_key
@@ -57,6 +58,9 @@ class PostAPIApp(tk.Tk):
         self.content_frame.pack(side="right", fill="both", expand=True)
 
         self.build_menu()
+
+        # Initialize selected_accounts as an empty list
+        self.selected_accounts = []
 
         # === Startpage ===
         self.show_Menu()
@@ -214,8 +218,15 @@ class PostAPIApp(tk.Tk):
 
         # Filepath (Local URL)
         tk.Label(frame_insert, text="Picture Filepath:").pack()
-        self.ig_image_entry = tk.Entry(frame_insert, width=50)
-        self.ig_image_entry.pack(pady=5)
+        self.ig_image_path = tk.StringVar()
+        frame_file = tk.Frame(frame_insert)
+        frame_file.pack(pady=5)
+        #tk.Label(frame_file, text="Picture Filepath:").pack(side="left")
+        self.ig_image_entry = tk.Entry(frame_file, textvariable=self.ig_image_path, width=40, state="readonly")
+        self.ig_image_entry.pack(side="left", padx=5)
+        tk.Button(frame_file, text="Browse...", command=self.browse_image_file).pack(side="left")
+        #self.ig_image_entry = tk.Entry(frame_insert, width=50)
+        #self.ig_image_entry.pack(pady=5)
 
         # Caption
         tk.Label(frame_insert, text="Caption:").pack()
@@ -250,6 +261,13 @@ class PostAPIApp(tk.Tk):
 
         # Load Accounts into table
         self.load_accounts()
+
+        #List for Selcted Accounts
+        tk.Label(frame_accounts, text="Selected Accounts:", font=("Arial", 12)).pack(pady=5)
+        self.selected_accounts_var = tk.StringVar()
+        self.selected_accounts_label = tk.Label(frame_accounts, textvariable=self.selected_accounts_var, fg="blue", anchor="w", justify="left")
+        self.selected_accounts_label.pack(fill="x", padx=5)
+        self.update_selected_accounts_label()
 
         # Debug Message
         logging.info("UI: Opened Instagram Page")
@@ -299,11 +317,17 @@ class PostAPIApp(tk.Tk):
         git_username = self.git_user_entry.get()
         git_email = self.git_email_entry.get()
         local_repo_path = self.local_repo_entry.get()
+        #Load env in env handler
+        self.controller.env_handler.load(".env/git.env")  # Ensure the environment is loaded before saving settings
         if git_username and git_email and local_repo_path:
             # Update the .env file with the new Git settings; no need to check if they are already set as the function will handle that
-            update_env_entry(GIT_ENV_PATH, "GIT_USERNAME", git_username)
-            update_env_entry(GIT_ENV_PATH, "GIT_EMAIL", git_email)
-            update_env_entry(GIT_ENV_PATH, "REPO_PATH", local_repo_path)
+            self.controller.env_handler.setV("GIT_USERNAME", git_username)
+            self.controller.env_handler.setV("GIT_EMAIL", git_email)
+            self.controller.env_handler.setV("REPO_PATH", local_repo_path)
+            
+            #update_env_entry(GIT_ENV_PATH, "GIT_USERNAME", git_username)
+            #update_env_entry(GIT_ENV_PATH, "GIT_EMAIL", git_email)
+            #update_env_entry(GIT_ENV_PATH, "REPO_PATH", local_repo_path)
             # Remove previous messages
             for widget in self.frame_message.winfo_children():
               widget.destroy()
@@ -339,6 +363,13 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI: Saved ACM Settings")
     
+    #File Selection
+    def browse_image_file(self):
+        filetypes = [("Image files", "*.jpg *.jpeg *.png *.bmp *.gif"), ("All files", "*.*")]
+        filename = filedialog.askopenfilename(title="Select Image", filetypes=filetypes)
+        if filename:
+            self.ig_image_path.set(filename)
+
     #Loads the Accounts from the accounts.json file
     def load_accounts(self):
         #accounts = [] #Template var
@@ -386,6 +417,18 @@ class PostAPIApp(tk.Tk):
             )
         logging.info("UI: Loaded Accounts into Table")
 
+    #Update the selected accounts label
+    def update_selected_accounts_label(self):
+        if not self.selected_accounts:
+            self.selected_accounts_var.set("None")
+            #Debug Message
+            logging.info("UI: No accounts selected to display into selected_accounts_label")
+        else:
+            names = [acc["username"] for acc in self.selected_accounts]
+            self.selected_accounts_var.set(", ".join(names))
+            #Debug Message
+            logging.info(f"UI: Updated selected accounts label: {self.selected_accounts_var.get()}")        
+
     # Opens a new window to select accounts for posting
     def open_account_selection(self):
         # Check if accounts are loaded
@@ -410,8 +453,12 @@ class PostAPIApp(tk.Tk):
             self.account_vars[acc.get("username")] = var
 
         def save_selection():
-            self.selected_accounts = [user for user, var in self.account_vars.items() if var.get()]
+            self.selected_accounts = [
+                acc for acc in self.accounts
+                if self.account_vars.get(acc["username"], None) and self.account_vars[acc["username"]].get()
+            ]
             win.destroy()
+            self.update_selected_accounts_label()
             logging.info(f"UI_TL1: Selected accounts for posting: {self.selected_accounts}")
 
         #Save Button
@@ -597,22 +644,20 @@ class PostAPIApp(tk.Tk):
             return
         
         #Debug Message
-        logging.info(f"UI: Beginn Posting Image: {filepath} with caption: {caption}.......")
+        logging.info(f"UI: Beginn Posting Image: {insta_image} with caption: {insta_cap}.......")
 
         #This is where the Instagram Poster Class does its job
-        for user in self.selected_accounts:
-            logging.info(f"UI: Posting '{filepath}' with caption '{caption}' on account '{user}'")
-            # Hier Instagram-API-Aufruf für jeden Account
-            # Example: self.controller.post_on_instagram(user, filepath, caption)
-        
-        #Call the Instagram Poster Class to handle the posting
-        #self.controller.instagram_poster.setIG_ID(self.selected_accounts[0])  # Set the first selected account as the IG_ID
-        self.controller.instagram_poster.setAccessToken(self.accounts[0]["token"])  # Set the access token for the first selected account
-        #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
-        #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
-        self.controller.instagram_poster.setupPost(insta_cap, insta_image)
-        self.controller.instagram_poster.uploadPicture2Git()
-        self.controller.instagram_poster.postImageOnInstagram()
+        for acc in self.selected_accounts:
+            logging.info(f"UI: Posting '{insta_image}' with caption '{insta_cap}' on account '{acc["username"]}'")
+    
+            #Call the Instagram Poster Class to handle the posting
+            self.controller.instagram_poster.setIG_ID(acc["IG_ID"])  # Set the first selected account as the IG_ID
+            self.controller.instagram_poster.setAccessToken(acc["token"])  # Set the access token for the first selected account
+            #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
+            #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
+            self.controller.instagram_poster.setupPost(insta_cap, insta_image)
+            self.controller.instagram_poster.uploadPicture2Git()
+            self.controller.instagram_poster.postImageOnInstagram()
 
 
     #Exit Func
