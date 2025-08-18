@@ -29,8 +29,13 @@ class instagram_poster:
         self.CAPTION = caption
         self.IMAGE_URL_LOCAL = img_path
 
-    #Get IG_ID and save it
-
+    #Set ig_id
+    def setIG_ID(self, ig_id):
+        self.ig_id = ig_id
+    
+    #Set access token
+    def setAT(self, access_token):
+        self.access_token = access_token
 
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
     def uploadPicture2Git(self):
@@ -57,16 +62,24 @@ class instagram_poster:
         self.git_handler.set_git_email(git_email)
         self.git_handler.set_git_config() #Must be run in order to update the repo_config in git
 
+        #Ceckout main branch or else it will be inconsistend and will not work
+        self.git_handler.checkout_branch("main")
+
         #File should already be copied to destination
+        #Add all changes, commit and push to main - Branch selection not added yet
         self.git_handler.add_all_changes()
-        self.git_handler.push()
+        self.git_handler.commit_changes(f"Add image for Instagram post: {filename}")
+        self.git_handler.push_changes("main")
 
         logging.info("INSTAGRAM_POSTER: Picture moved to Repo and pushed!")
 
         #Create and get Rawlink to save
         self.raw_url = self.git_handler.get_raw_url(filename)
         self.GIT_URL = self.raw_url
-        logging.info(f"INSTAGRAM_POSTER: Bild hochgeladen, Raw-Link: {self.raw_url}")
+
+        #Debug Message
+        self.git_handler.dump_git_status()  # Optional: Dump git status for debugging
+        logging.info(f"INSTAGRAM_POSTER: Uploaded Picture to Git, Raw-Link: {self.raw_url}")
 
     #Creates the Upload Url
     def create_Up_URL(self):
