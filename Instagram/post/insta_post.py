@@ -96,8 +96,8 @@ class instagram_poster:
             logging.error(f"INSTAGRAM_POSTER: Error creating upload URL: {response.text}")
             raise Exception(f"Error creating upload URL: {response.text}")
         #Return and save to env file
-        self.env_handler.setV("IG_ACC_ID", self.ig_id)
-        self.env_handler.save()  # Save the updated environment variables
+        #self.env_handler.setV(", self.ig_id) #given ID is not IG ID its media ID
+        #self.env_handler.save()  # Save the updated environment variables
         return response.json().get("id")
     
     def postOnInstagram(self):

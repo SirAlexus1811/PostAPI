@@ -4,4 +4,5 @@ testdata/
 logs/
 utilstest/
 __pycache__/
+accounts.json
 data/

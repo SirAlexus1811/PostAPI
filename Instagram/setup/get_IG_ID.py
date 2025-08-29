@@ -5,7 +5,7 @@ from urllib.parse import urlencode  #Makes the URL request for GRAPH API
 from dotenv import load_dotenv      #Loads the env file
 
 #selfmade handlers
-from utils.env_handler_OLD import update_env_entry
+from utils.env_handler import EnvHandler
 
 #Path to .env File for Instagram
 ENV_PATH = ".env/instagram.env"
@@ -18,6 +18,8 @@ if os.path.exists(ENV_PATH):
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN") or input("Access Token: ").strip()
 #FB_PAGE_ID = os.getenv("FB_PAGE_ID") or input ("Facebook Page ID: ").strip()
 #This FB Page id will be asked in first request.
+
+env_handler = EnvHandler(ENV_PATH)
 
 #Make URL with selected params (selection will be added later)
 BASE_URL = f"https://graph.instagram.com/v22.0/me"
@@ -39,7 +41,7 @@ if "id" in dataToProcess:
     ig_id = dataToProcess["id"] #save id
     print("DEBUG: Found IG_ID!")
 
-    update_env_entry(ENV_PATH, "IG_ACC_ID", ig_id)
+    env_handler.setV("IG_ACC_ID", ig_id)
     print("DEBUG: ENV UPDATED!")
 
     #Open Env File as f to read the lines from it
