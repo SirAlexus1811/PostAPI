@@ -8,7 +8,7 @@ from dotenv import load_dotenv      #Loads the env file
 from utils.env_handler import EnvHandler
 
 #Path to .env File for Instagram
-ENV_PATH = ".env/instagram.env"
+ENV_PATH = ".env_program/instagram.env"
 
 #Load env if it exists
 if os.path.exists(ENV_PATH):

@@ -19,6 +19,10 @@ import logging
 import os
 import importlib.util
 
+#Temp For Debug Purposes
+#import sys
+#print("\n".join(sys.path))
+
 #Controller for the PostAPI application
 class PostAPIController:
     debug_handler = None  # Placeholder for debug handler
@@ -47,14 +51,14 @@ class PostAPIController:
     #Start Env_Handler
     def startEnvHandler(self):
         # Create an instance of the EnvHandler class
-        self.env_handler = EnvHandler(".env/settings.env")
+        self.env_handler = EnvHandler(".env_program/settings.env")
         # Debug Message
         logging.info("Ctr: EnvHandler started with env path: {}".format(self.env_handler.env_fPath))
 
     #Start Git_Handler
     def startGitHandler(self):
         if self.env_handler is not None:
-            self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
+            self.env_handler.load(".env_program/git.env")  # Ensure the environment is loaded before initializing GitHandler
         else:
             logging.error("Ctr: EnvHandler is not initialized before GitHandler!")
             raise RuntimeError("EnvHandler must be initialized before GitHandler.")

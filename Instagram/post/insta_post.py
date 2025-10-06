@@ -16,7 +16,7 @@ class instagram_poster:
         self.git_handler = git_handler
 
         #Load correct instagram.env
-        self.env_handler.load(".env/instagram.env")
+        self.env_handler.load(".env_program/instagram.env")
 
         self.access_token = self.env_handler.get("ACCESS_TOKEN")
         self.ig_id = self.env_handler.get("IG_ACC_ID")
@@ -40,7 +40,7 @@ class instagram_poster:
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
     def uploadPicture2Git(self):
         #Repo Config
-        self.env_handler.load(".env/git.env")  # Ensure the environment is loaded before initializing GitHandler
+        self.env_handler.load(".env_program/git.env")  # Ensure the environment is loaded before initializing GitHandler
         repo_path = self.env_handler.get("REPO_PATH")
         git_username = self.env_handler.get("GIT_USERNAME")
         git_email = self.env_handler.get("GIT_EMAIL")

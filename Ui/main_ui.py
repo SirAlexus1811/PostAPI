@@ -20,7 +20,7 @@ import json
 #ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 
 
 #Env Path Settings Not needed because first instance of env handler load this settings file
-#SETTINGS_ENV_PATH = ".env/settings.env"
+#SETTINGS_ENV_PATH = ".env_program/settings.env"
 
 class PostAPIApp(tk.Tk):
     def __init__(self, debug_handler, controller):
@@ -34,7 +34,7 @@ class PostAPIApp(tk.Tk):
         
         #Setup Env Handler
         if self.controller and hasattr(self.controller, "env_handler"):
-            self.controller.env_handler.load(".env/settings.env")
+            self.controller.env_handler.load(".env_program/settings.env")
         else:
             logging.error("UI: No valid Controller or env_handler passed!")
             raise ValueError("No valid Controller or env_handler passed!")
@@ -132,13 +132,13 @@ class PostAPIApp(tk.Tk):
     def show_settings(self):
         #Load Existings Settings
         #Switch to git.env to load git settings
-        self.controller.env_handler.load(".env/git.env")
+        self.controller.env_handler.load(".env_program/git.env")
         git_username = self.controller.env_handler.get("GIT_USERNAME", "")
         git_email = self.controller.env_handler.get("GIT_EMAIL", "")
         repo_path = self.controller.env_handler.get("REPO_PATH", "")
         
         #Switch Back to settings.env
-        self.controller.env_handler.load(".env/settings.env")
+        self.controller.env_handler.load(".env_program/settings.env")
         acm_instagram_path = self.controller.env_handler.get("ACM_INSTA_PATH", "")
 
         #Clear content and show settings
@@ -318,7 +318,7 @@ class PostAPIApp(tk.Tk):
         git_email = self.git_email_entry.get()
         local_repo_path = self.local_repo_entry.get()
         #Load env in env handler
-        self.controller.env_handler.load(".env/git.env")  # Ensure the environment is loaded before saving settings
+        self.controller.env_handler.load(".env_program/git.env")  # Ensure the environment is loaded before saving settings
         if git_username and git_email and local_repo_path:
             # Update the .env file with the new Git settings; no need to check if they are already set as the function will handle that
             self.controller.env_handler.setV("GIT_USERNAME", git_username)

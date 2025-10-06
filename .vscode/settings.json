@@ -1,7 +1,7 @@
 {
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.extraPaths": ["./"],
     "python.analysis.autoSearchPaths": true,
+    "python.analysis.extraPaths": ["${workspaceFolder}"],    
     "python.languageServer": "Pylance"
 }
