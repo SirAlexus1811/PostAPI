@@ -119,7 +119,7 @@ class PostAPIApp(tk.Tk):
     def show_HowToUse(self):
         #Clear content and show How to Use
         self.clear_content()
-        tk.Label(self.content_frame, text="How to Use", font=("Arial", 18)).pack(pady=10)
+        tk.Label(self.content_frame, text="How to Use (WIP)", font=("Arial", 18)).pack(pady=10)
         tk.Label(self.content_frame, text="1. Setup this Program via the Settings Tab.\n"
                                           "2. Use the Instagram menu to post pictures and Videos on Instagram. (WIP)\n"
                                           "3. Use the TikTok menu to post pictures and videos on TikTok. (WIP)\n"
@@ -216,6 +216,14 @@ class PostAPIApp(tk.Tk):
 
         tk.Label(frame_insert, text="Instagram Post", font=("Arial", 18)).pack(pady=10)
 
+        #Media Type Selection
+        self.media_type = tk.StringVar(value="image")
+        frame_media = tk.Frame(frame_insert)
+        frame_media.pack(pady=5)
+        tk.Label(frame_media, text="Media type:").pack(side="left")
+        tk.Radiobutton(frame_media, text="Picture", variable=self.media_type, value="image").pack(side="left")
+        tk.Radiobutton(frame_media, text="Reel", variable=self.media_type, value="video").pack(side="left")
+
         # Filepath (Local URL)
         tk.Label(frame_insert, text="Picture Filepath:").pack()
         self.ig_image_path = tk.StringVar()
@@ -310,6 +318,24 @@ class PostAPIApp(tk.Tk):
         if self.debug_handler is not None:
             self.debug_handler.set_widget(self.debug_console)
 
+        # Button für Debug-Konsole im Extra-Fenster
+        def open_debug_window():
+            logging.info("UI: Opening Debug Console in Extra Window")
+            win = tk.Toplevel(self)
+            win.title("Debug Console (Extra Window)")
+            win.geometry("800x400")
+            debug_text = tk.Text(win, height=20, width=80, state="normal", bg="#222", fg="#0f0")
+            debug_text.pack(fill="both", expand=True)
+            debug_text.delete("1.0", "end")
+            for msg in TkinterLogHandler.log_history:
+                debug_text.insert("end", msg + "\n")
+            debug_text.config(state="disabled")
+            # Optional: Logging auch auf dieses Widget umleiten
+            if self.debug_handler is not None:
+                self.debug_handler.set_widget(debug_text)
+
+        tk.Button(self.content_frame, text="Open Debug-Console in extra window", command=open_debug_window).pack(pady=10)
+
         logging.info("UI: Opened Debug Console")
 
     # === Functions ===
@@ -330,7 +356,7 @@ class PostAPIApp(tk.Tk):
             #update_env_entry(GIT_ENV_PATH, "REPO_PATH", local_repo_path)
             # Remove previous messages
             for widget in self.frame_message.winfo_children():
-              widget.destroy()
+                widget.destroy()
             tk.Label(self.frame_message, text=f"Git settings saved:\n{git_username}\n{git_email}\n{local_repo_path}\n").pack()
         else:
             tk.Label(self.frame_message, text="Please Enter something.").pack()
@@ -365,7 +391,13 @@ class PostAPIApp(tk.Tk):
     
     #File Selection
     def browse_image_file(self):
-        filetypes = [("Image files", "*.jpg *.jpeg *.png *.bmp *.gif"), ("All files", "*.*")]
+        media_type = self.media_type.get() if hasattr(self, "media_type") else "image"
+        if media_type == "image":
+            filetypes = [("Image files", "*.jpg *.jpeg")]
+        elif media_type == "video":
+            filetypes = [("Video files", "*.mp4 *.mov")]
+        else:
+            filetypes = [("All files", "*.*")]
         filename = filedialog.askopenfilename(title="Select Image", filetypes=filetypes)
         if filename:
             self.ig_image_path.set(filename)
@@ -633,31 +665,47 @@ class PostAPIApp(tk.Tk):
     def post_image(self):
         #Get Values from Entries
         insta_cap = self.ig_caption_entry.get().strip()
-        insta_image = self.ig_image_entry.get().strip()
-        if not insta_cap or not insta_image:
+        insta_media = self.ig_image_entry.get().strip()
+        media_type = self.media_type.get()
+        if not insta_cap or not insta_media:
             logging.error("UI: Caption or Image path is empty.")
             tk.Label(self.content_frame, text="Please fill in both fields.", fg="red").pack(pady=5)
             return
+
+        # Medientyp prüfen
+        if media_type == "image":
+            if not insta_media.lower().endswith((".jpg", ".jpeg")):
+                tk.Label(self.content_frame, text="Please select a picture that is a .jpg or .jpeg!", fg="red").pack(pady=5)
+                logging.error("UI: Selected media is not a valid image file.")
+                return
+        elif media_type == "video":
+            if not insta_media.lower().endswith((".mp4", ".mov")):
+                tk.Label(self.content_frame, text="Please select a video, that is a .mp4 or .mov!", fg="red").pack(pady=5)
+                logging.error("UI: Selected media is not a valid video file.")
+                return
 
         if not self.selected_accounts:
             logging.warning("UI: No Accounts selected!")
             return
         
         #Debug Message
-        logging.info(f"UI: Beginn Posting Image: {insta_image} with caption: {insta_cap}.......")
+        logging.info(f"UI: Beginn Posting Image: {insta_media} with caption: {insta_cap}.......")
 
         #This is where the Instagram Poster Class does its job
         for acc in self.selected_accounts:
-            logging.info(f"UI: Posting '{insta_image}' with caption '{insta_cap}' on account '{acc["username"]}'")
+            logging.info(f"UI: Posting '{insta_media}' with caption '{insta_cap}' on account '{acc["username"]}'")
     
             #Call the Instagram Poster Class to handle the posting
             self.controller.instagram_poster.setIG_ID(acc["IG_ID"])  # Set the first selected account as the IG_ID
             self.controller.instagram_poster.setAT(acc["token"])  # Set the access token for the first selected account
             #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
             #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
-            self.controller.instagram_poster.setupPost(insta_cap, insta_image)
             self.controller.instagram_poster.uploadPicture2Git()
-            self.controller.instagram_poster.postOnInstagram()
+            self.controller.instagram_poster.setupPost(insta_cap, insta_media)
+            if media_type == "image":
+                self.controller.instagram_poster.postPicOnInstagram()
+            elif media_type == "video":
+                self.controller.instagram_poster.postReelOnInstagram()
 
     #Exit Func
     def exit_app(self):

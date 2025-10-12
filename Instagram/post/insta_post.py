@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import requests
+import time
 
 class instagram_poster:
     CAPTION = "" # Placeholder; will be set in init()
@@ -82,14 +83,29 @@ class instagram_poster:
         logging.info(f"INSTAGRAM_POSTER: Uploaded Picture to Git, Raw-Link: {self.raw_url}")
 
     #Creates the Upload Url
-    def create_Up_URL(self):
+    def create_Up_URL(self, media_type):
         #Create Upload Url
-        url = f"https://graph.instagram.com/v22.0/{self.ig_id}/media"
-        params = {
-            "image_url": self.GIT_URL,
-            "caption": self.CAPTION,
-            "access_token": self.access_token
-        }
+        url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media"
+        if media_type == "image":
+            logging.info("INSTAGRAM_POSTER: Creating upload URL for image...")
+            params = {
+                "image_url": self.GIT_URL,
+                "caption": self.CAPTION,
+                "access_token": self.access_token
+            }
+        elif media_type == "video":
+            logging.info("INSTAGRAM_POSTER: Creating upload URL for video...")
+            params = {
+                "media_type": "REELS",
+                "share_to_feed": "true",
+                "video_url": self.GIT_URL,
+                "caption": self.CAPTION,
+                "access_token": self.access_token
+            }
+        else:
+            logging.error("INSTAGRAM_POSTER: Invalid media type specified for upload URL creation.")
+            raise ValueError("Invalid media type specified. Must be 'image' or 'video'.")
+        
         #Create Response returns the IG_ID
         response = requests.post(url, params=params)
         if response.status_code != 200:
@@ -98,17 +114,42 @@ class instagram_poster:
         #Return and save to env file
         #self.env_handler.setV(", self.ig_id) #given ID is not IG ID its media ID
         #self.env_handler.save()  # Save the updated environment variables
-        return response.json().get("id")
+        #Grab Media ID and Uri; Uri needed for videos
+        media_id = response.json().get("id")
+        media_uri = response.json().get("uri")
+        logging.info(f"INSTAGRAM_POSTER: Created upload URL successfully. Media ID: {media_id}, URI: {media_uri}")
+        return media_id, media_uri
     
-    def postOnInstagram(self):
-        #Prepare Upload and get media ID
-        media_id = self.create_Up_URL()
+    #Insert Logging operations here
+    def wait_for_media_ready(self, creation_id, timeout=120, poll_interval=5):
+        url = f"https://graph.facebook.com/v24.0/{creation_id}"
+        params = {
+            "fields": "status",
+            "access_token": self.access_token
+        }
+        logging.info("INSTAGRAM_POSTER: Waiting for media to be ready...")
+        waited = 0
+        while waited < timeout:
+            response = requests.get(url, params=params)
+            data = response.json()
+            status = data.get("status")
+            if status == "FINISHED":
+                return True
+            elif status == "ERROR":
+                raise Exception(f"Media processing failed: {data}")
+            time.sleep(poll_interval)
+            waited += poll_interval
+        raise TimeoutError("Media was not ready after waiting.")
+
+    def postPicOnInstagram(self):
+        #Prepare Upload and get media ID; media uri not needed for pictures
+        media_id, media_uri = self.create_Up_URL("image")
         if not media_id:
             logging.error("INSTAGRAM_POSTER: Got no Media-ID, Abortion.")
             return False
 
         #Publish Media
-        publish_url = f"https://graph.instagram.com/v22.0/{self.ig_id}/media_publish"
+        publish_url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media_publish"
         params = {
             "creation_id": media_id,
             "access_token": self.access_token
@@ -118,5 +159,53 @@ class instagram_poster:
             logging.error(f"INSTAGRAM_POSTER: Error publishing: {response.text}")
             raise Exception(f"Error publishing: {response.text}")
 
-        logging.info(f"INSTAGRAM_POSTER: Post published successfully! Response: {response.json()}")
+        logging.info(f"INSTAGRAM_POSTER: Post published successfully! (Picture) Response: {response.json()}")
+        return response.json()
+    
+    #No upload to Github needed
+    def postReelOnInstagram(self):
+        #Create Container with create_up_url
+        media_id, media_uri = self.create_Up_URL("video")
+        if not media_id or not media_uri:
+            logging.error("INSTAGRAM_POSTER: Got no Media-ID or URI, Abortion.")
+            return False
+        
+        #Upload the Video
+        video_path = self.GIT_URL
+        #file_size = os.path.getsize(video_path)
+        headers = {
+            "Authorization": f"OAuth {self.access_token}",
+            "file_url": video_path
+            #"offset": "0",
+            #"file_size": str(file_size),
+            #"--data-binary": str(video_path)
+        }
+        #Open the video and read bytes
+        #with open(video_path, "rb") as f:
+        #    video_data = f.read()
+        upload_url = f"https://rupload.facebook.com/ig-api-upload/v24.0/{media_id}"
+        upload_response = requests.post(upload_url, headers=headers)#, data=video_data)
+        if upload_response.status_code != 200:
+            logging.error(f"Error uploading the video: {upload_response.text}")
+            return False
+        
+        #Status checkup
+        try:
+            self.wait_for_media_ready(media_id)
+        except Exception as e:
+            logging.error(f"Error at status checkup: {e}")
+            return False
+        
+        #Publish the Reel
+        publish_url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media_publish"
+        params = {
+            "creation_id": media_id,
+            "access_token": self.access_token
+        }
+        response = requests.post(publish_url, params=params)
+        if response.status_code != 200:
+            logging.error(f"INSTAGRAM_POSTER: Error publishing: {response.text}")
+            raise Exception(f"Error publishing: {response.text}")
+
+        logging.info(f"INSTAGRAM_POSTER: Reel published successfully! Response: {response.json()}")
         return response.json()
