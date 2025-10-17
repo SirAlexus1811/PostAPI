@@ -39,13 +39,19 @@ class instagram_poster:
         self.access_token = access_token
 
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
-    def uploadPicture2Git(self):
+    def uploadPicture2Git(self, filepath):
+        #Set IMAGE_URL_LOCAL from Filepath
+        self.IMAGE_URL_LOCAL = filepath
+        
         #Repo Config
         self.env_handler.load(".env_program/git.env")  # Ensure the environment is loaded before initializing GitHandler
         repo_path = self.env_handler.get("REPO_PATH")
         git_username = self.env_handler.get("GIT_USERNAME")
         git_email = self.env_handler.get("GIT_EMAIL")
         filename = os.path.basename(self.IMAGE_URL_LOCAL)
+        
+        #Debug Message
+        logging.info(f"INSTAGRAM_POSTER: Loaded Values from git.env - Repo: {repo_path}, User: {git_username}, Email: {git_email}, Filename: {filename}")
         #Branch Selection not added yet
         #branch = "main"  # Default branch, can be changed if needed -> There will be an Option in UI later on
 
@@ -115,16 +121,16 @@ class instagram_poster:
         #self.env_handler.setV(", self.ig_id) #given ID is not IG ID its media ID
         #self.env_handler.save()  # Save the updated environment variables
         #Grab Media ID and Uri; Uri needed for videos
-        media_id = response.json().get("id")
-        media_uri = response.json().get("uri")
-        logging.info(f"INSTAGRAM_POSTER: Created upload URL successfully. Media ID: {media_id}, URI: {media_uri}")
-        return media_id, media_uri
+        container_id = response.json().get("id")
+        container_uri = response.json().get("uri")
+        logging.info(f"INSTAGRAM_POSTER: Created upload URL successfully. Media ID: {container_id}, URI: {container_uri}")
+        return container_id, container_uri
     
     #Insert Logging operations here
     def wait_for_media_ready(self, creation_id, timeout=120, poll_interval=5):
-        url = f"https://graph.facebook.com/v24.0/{creation_id}"
+        url = f"https://graph.instagram.com/v24.0/{creation_id}"
         params = {
-            "fields": "status",
+            "fields": "status_code",
             "access_token": self.access_token
         }
         logging.info("INSTAGRAM_POSTER: Waiting for media to be ready...")
@@ -132,26 +138,26 @@ class instagram_poster:
         while waited < timeout:
             response = requests.get(url, params=params)
             data = response.json()
-            status = data.get("status")
+            status = data.get("status_code")
             if status == "FINISHED":
                 return True
-            elif status == "ERROR":
-                raise Exception(f"Media processing failed: {data}")
+            #else:
+                #raise Exception(f"Media not ready yet: {data}")
             time.sleep(poll_interval)
             waited += poll_interval
-        raise TimeoutError("Media was not ready after waiting.")
+        raise TimeoutError("Media was not ready after waiting. Media Upload may take longer or failed.")
 
     def postPicOnInstagram(self):
         #Prepare Upload and get media ID; media uri not needed for pictures
-        media_id, media_uri = self.create_Up_URL("image")
-        if not media_id:
+        conatiner_id, conatiner_uri = self.create_Up_URL("image")
+        if not conatiner_id:
             logging.error("INSTAGRAM_POSTER: Got no Media-ID, Abortion.")
             return False
 
         #Publish Media
         publish_url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media_publish"
         params = {
-            "creation_id": media_id,
+            "creation_id": conatiner_id,
             "access_token": self.access_token
         }
         response = requests.post(publish_url, params=params)
@@ -162,36 +168,37 @@ class instagram_poster:
         logging.info(f"INSTAGRAM_POSTER: Post published successfully! (Picture) Response: {response.json()}")
         return response.json()
     
-    #No upload to Github needed
     def postReelOnInstagram(self):
         #Create Container with create_up_url
-        media_id, media_uri = self.create_Up_URL("video")
-        if not media_id or not media_uri:
+        container_id, container_uri = self.create_Up_URL("video")
+        if not container_id: #CONTAINER_URI ONLY NEEDED FOR RESUMABLE SESSION
             logging.error("INSTAGRAM_POSTER: Got no Media-ID or URI, Abortion.")
             return False
         
+        ##ONLY NEEDED FOR RESUMABLE SESSION
         #Upload the Video
-        video_path = self.GIT_URL
+        #video_path = self.GIT_URL
         #file_size = os.path.getsize(video_path)
-        headers = {
-            "Authorization": f"OAuth {self.access_token}",
-            "file_url": video_path
+        #headers = {
+         #   "Authorization": f"OAuth {self.access_token}",
+          #  "file_url": video_path
             #"offset": "0",
             #"file_size": str(file_size),
             #"--data-binary": str(video_path)
-        }
+        #}
         #Open the video and read bytes
         #with open(video_path, "rb") as f:
         #    video_data = f.read()
-        upload_url = f"https://rupload.facebook.com/ig-api-upload/v24.0/{media_id}"
-        upload_response = requests.post(upload_url, headers=headers)#, data=video_data)
-        if upload_response.status_code != 200:
-            logging.error(f"Error uploading the video: {upload_response.text}")
-            return False
+        #upload_url = container_uri      #f"https://rupload.facebook.com/ig-api-upload/v24.0/{media_id}"
+        
+        #upload_response = requests.post(upload_url, headers=headers)
+        #if upload_response.status_code != 200:
+        #    logging.error(f"Error uploading the video: {upload_response.text}")
+        #   return False
         
         #Status checkup
         try:
-            self.wait_for_media_ready(media_id)
+            self.wait_for_media_ready(container_id)
         except Exception as e:
             logging.error(f"Error at status checkup: {e}")
             return False
@@ -199,7 +206,7 @@ class instagram_poster:
         #Publish the Reel
         publish_url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media_publish"
         params = {
-            "creation_id": media_id,
+            "creation_id": container_id,
             "access_token": self.access_token
         }
         response = requests.post(publish_url, params=params)

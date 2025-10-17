@@ -3,5 +3,12 @@
     "python.analysis.autoImportCompletions": true,
     "python.analysis.autoSearchPaths": true,
     "python.analysis.extraPaths": ["${workspaceFolder}"],    
-    "python.languageServer": "Pylance"
+    "python.languageServer": "Pylance",
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
 }

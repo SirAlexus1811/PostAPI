@@ -140,6 +140,7 @@ class PostAPIApp(tk.Tk):
         #Switch Back to settings.env
         self.controller.env_handler.load(".env_program/settings.env")
         acm_instagram_path = self.controller.env_handler.get("ACM_INSTA_PATH", "")
+        debug_mode = self.controller.env_handler.get("DEBUG_MODE", "")
 
         #Clear content and show settings
         self.clear_content()
@@ -182,7 +183,7 @@ class PostAPIApp(tk.Tk):
         frame_debug.pack(pady=5)
 
         tk.Label(frame_debug, text="Debug Settings:", font=("Arial", 14)).pack()
-        self.debug_var = tk.BooleanVar(value=(self.controller.env_handler.get("DEBUG_MODE") == "True"))
+        self.debug_var = tk.BooleanVar(value=(debug_mode == "True"))
         debug_cb = tk.Checkbutton(frame_debug, text="Activate Debug-Mode", variable=self.debug_var)
         debug_cb.pack(pady=10)
 
@@ -366,6 +367,7 @@ class PostAPIApp(tk.Tk):
 
     def save_settings_DEBUG(self):
         debug_mode = self.debug_var.get()
+        self.controller.env_handler.load(".env_program/settings.env")  # Ensure the environment is loaded before saving settings
         self.controller.env_handler.setV("DEBUG_MODE", str(debug_mode))  # Save the debug mode setting
         #update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
         # Remove previous messages
@@ -382,9 +384,11 @@ class PostAPIApp(tk.Tk):
         #Remove previous message
         for widget in self.frame_message.winfo_children():
             widget.destroy()        
-        acm_instagram_path = self.acm_instagram.get()
+        acm_instagram_path = self.acm_instagram.get() 
+        self.controller.env_handler.load(".env_program/settings.env")  # Ensure the environment is loaded before saving settings
         self.controller.env_handler.setV("ACM_INSTA_PATH", str(acm_instagram_path))  # Save the ACM Instagram file path
         tk.Label(self.frame_message, text="ACM settings saved successfully.").pack()
+        self.build_menu()  # Rebuild the menu to reflect changes
         
         #Debug Message
         logging.info("UI: Saved ACM Settings")
@@ -398,7 +402,7 @@ class PostAPIApp(tk.Tk):
             filetypes = [("Video files", "*.mp4 *.mov")]
         else:
             filetypes = [("All files", "*.*")]
-        filename = filedialog.askopenfilename(title="Select Image", filetypes=filetypes)
+        filename = filedialog.askopenfilename(title="Select File", filetypes=filetypes)
         if filename:
             self.ig_image_path.set(filename)
 
@@ -667,6 +671,7 @@ class PostAPIApp(tk.Tk):
         insta_cap = self.ig_caption_entry.get().strip()
         insta_media = self.ig_image_entry.get().strip()
         media_type = self.media_type.get()
+        filepath = self.ig_image_path.get()
         if not insta_cap or not insta_media:
             logging.error("UI: Caption or Image path is empty.")
             tk.Label(self.content_frame, text="Please fill in both fields.", fg="red").pack(pady=5)
@@ -700,7 +705,7 @@ class PostAPIApp(tk.Tk):
             self.controller.instagram_poster.setAT(acc["token"])  # Set the access token for the first selected account
             #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
             #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
-            self.controller.instagram_poster.uploadPicture2Git()
+            self.controller.instagram_poster.uploadPicture2Git(filepath)
             self.controller.instagram_poster.setupPost(insta_cap, insta_media)
             if media_type == "image":
                 self.controller.instagram_poster.postPicOnInstagram()

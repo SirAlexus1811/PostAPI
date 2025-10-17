@@ -2,5 +2,7 @@ python-dotenv
 requests
 Flask
 gitpython
+git
 numpy
 tk
+matplotlib
