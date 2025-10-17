@@ -703,8 +703,6 @@ class PostAPIApp(tk.Tk):
             #Call the Instagram Poster Class to handle the posting
             self.controller.instagram_poster.setIG_ID(acc["IG_ID"])  # Set the first selected account as the IG_ID
             self.controller.instagram_poster.setAT(acc["token"])  # Set the access token for the first selected account
-            #self.controller.instagram_poster.setImageURLLocal(insta_image)  # Set the local image path
-            #self.controller.instagram_poster.setCaption(insta_cap)  # Set the caption for the post
             self.controller.instagram_poster.uploadPicture2Git(filepath)
             self.controller.instagram_poster.setupPost(insta_cap, insta_media)
             if media_type == "image":

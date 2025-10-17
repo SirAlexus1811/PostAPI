@@ -117,10 +117,8 @@ class instagram_poster:
         if response.status_code != 200:
             logging.error(f"INSTAGRAM_POSTER: Error creating upload URL: {response.text}")
             raise Exception(f"Error creating upload URL: {response.text}")
-        #Return and save to env file
-        #self.env_handler.setV(", self.ig_id) #given ID is not IG ID its media ID
-        #self.env_handler.save()  # Save the updated environment variables
-        #Grab Media ID and Uri; Uri needed for videos
+        
+        #Get Data from response json
         container_id = response.json().get("id")
         container_uri = response.json().get("uri")
         logging.info(f"INSTAGRAM_POSTER: Created upload URL successfully. Media ID: {container_id}, URI: {container_uri}")
@@ -134,6 +132,7 @@ class instagram_poster:
             "access_token": self.access_token
         }
         logging.info("INSTAGRAM_POSTER: Waiting for media to be ready...")
+        #Wait until Finished or timeout
         waited = 0
         while waited < timeout:
             response = requests.get(url, params=params)
@@ -141,8 +140,9 @@ class instagram_poster:
             status = data.get("status_code")
             if status == "FINISHED":
                 return True
-            #else:
-                #raise Exception(f"Media not ready yet: {data}")
+            elif status == "ERROR":
+                logging.error("INSTAGRAM_POSTER: Media processing error.")
+                raise Exception("Media processing error.")
             time.sleep(poll_interval)
             waited += poll_interval
         raise TimeoutError("Media was not ready after waiting. Media Upload may take longer or failed.")
@@ -169,32 +169,11 @@ class instagram_poster:
         return response.json()
     
     def postReelOnInstagram(self):
-        #Create Container with create_up_url
+        #Create Container with create_up_url ## Container_uri only needed for resumable sessions
         container_id, container_uri = self.create_Up_URL("video")
         if not container_id: #CONTAINER_URI ONLY NEEDED FOR RESUMABLE SESSION
             logging.error("INSTAGRAM_POSTER: Got no Media-ID or URI, Abortion.")
             return False
-        
-        ##ONLY NEEDED FOR RESUMABLE SESSION
-        #Upload the Video
-        #video_path = self.GIT_URL
-        #file_size = os.path.getsize(video_path)
-        #headers = {
-         #   "Authorization": f"OAuth {self.access_token}",
-          #  "file_url": video_path
-            #"offset": "0",
-            #"file_size": str(file_size),
-            #"--data-binary": str(video_path)
-        #}
-        #Open the video and read bytes
-        #with open(video_path, "rb") as f:
-        #    video_data = f.read()
-        #upload_url = container_uri      #f"https://rupload.facebook.com/ig-api-upload/v24.0/{media_id}"
-        
-        #upload_response = requests.post(upload_url, headers=headers)
-        #if upload_response.status_code != 200:
-        #    logging.error(f"Error uploading the video: {upload_response.text}")
-        #   return False
         
         #Status checkup
         try:

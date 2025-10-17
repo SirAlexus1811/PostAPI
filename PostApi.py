@@ -19,10 +19,6 @@ import logging
 import os
 import importlib.util
 
-#Temp For Debug Purposes
-#import sys
-#print("\n".join(sys.path))
-
 #Controller for the PostAPI application
 class PostAPIController:
     debug_handler = None  # Placeholder for debug handler
