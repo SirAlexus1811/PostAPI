@@ -1,7 +1,14 @@
 {
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.extraPaths": ["./"],
     "python.analysis.autoSearchPaths": true,
-    "python.languageServer": "Pylance"
+    "python.analysis.extraPaths": ["${workspaceFolder}"],    
+    "python.languageServer": "Pylance",
+    "python-envs.pythonProjects": [
+        {
+            "path": "",
+            "envManager": "ms-python.python:system",
+            "packageManager": "ms-python.python:pip"
+        }
+    ]
 }

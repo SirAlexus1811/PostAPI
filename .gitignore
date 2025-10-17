@@ -1,6 +1,8 @@
-.env/
+.env
+.env_program/
 .vscode/
 testdata/
 logs/
 utilstest/
 __pycache__/
+data_accounts/

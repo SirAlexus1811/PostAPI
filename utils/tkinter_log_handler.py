@@ -2,29 +2,34 @@ import logging
 import os
 import datetime
 
+from matplotlib import widgets
+
 #Handler that is needed to make the Debug Section work
 class TkinterLogHandler(logging.Handler):
     log_history = []  # Central Class variable to store log history
+    widgets = []   # List to keep track of all text widgets using this handler
 
     def __init__(self, text_widget):
         super().__init__()
-        self.text_widget = text_widget
+        self.set_widget(text_widget)
 
     def set_widget(self, text_widget):
-        self.text_widget = text_widget
-
+        if text_widget not in self.widgets:
+            self.widgets.append(text_widget)
+            
     def emit(self, record):
         msg = self.format(record)
         # Only append to log history if it is not None and the last message is different - Prevent duplicates
         if self.log_history is not None and (not self.log_history or self.log_history[-1] != msg):
             self.log_history.append(msg)
-        if self.text_widget is not None:
-            def append():
-                self.text_widget.config(state="normal")
-                self.text_widget.insert("end", msg + "\n")
-                self.text_widget.see("end")
-                self.text_widget.config(state="disabled")
-            self.text_widget.after(0, append)
+        for widget in self.widgets:
+            try:
+                widget.config(state="normal")
+                widget.insert("end", msg + "\n")
+                widget.see("end")
+                widget.config(state="disabled")
+            except Exception:
+                pass
 
     #Saves log history to a file - Will be called on close
     @classmethod
