@@ -1,8 +1,12 @@
 #from doctest import debug
+from codecs import escape_encode
+from pydoc import doc
 from re import A
 import tkinter as tk
 from tkinter import N, ttk
 from tkinter import filedialog
+
+from tkinterweb import HtmlFrame
 
 #for safing settings
 #from dotenv import dotenv_values, load_dotenv, set_key
@@ -74,7 +78,7 @@ class PostAPIApp(tk.Tk):
         self.buttons = []
         menu_items = [
             ("PostAPI Menu", self.show_Menu),  # Title
-            ("1. How to Use", self.show_HowToUse),  # How to Use
+            ("1. Documentation", self.show_doc),  # Documentation
             ("2. Settings", self.show_settings),
             ("3. Instagram", self.show_instagram),
             ("4. TikTok", self.show_tiktok),
@@ -116,18 +120,36 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI: Opened Main Menu")
 
-    def show_HowToUse(self):
-        #Clear content and show How to Use
+    def show_doc(self):
+        #Clear content and create MainFrame on Page
         self.clear_content()
-        tk.Label(self.content_frame, text="How to Use (WIP)", font=("Arial", 18)).pack(pady=10)
-        tk.Label(self.content_frame, text="1. Setup this Program via the Settings Tab.\n"
-                                          "2. Use the Instagram menu to post pictures and Videos on Instagram. (WIP)\n"
-                                          "3. Use the TikTok menu to post pictures and videos on TikTok. (WIP)\n"
-                                          "4. Use the Client-Mode to use a server instance of our server setups. (Very WIP)\n"
-                                          "5. Check the Credits for author information.").pack(pady=10)
-
+        tk.Label(self.content_frame, text="Documentation", font=("Arial", 18)).pack(pady=10)
+        doc_frame = tk.Frame(self.content_frame)
+        doc_frame.pack(fill="both", expand=True)
+        
+        #Create two other frames inside Mainframe for List and HTML View
+        file_explo = tk.Listbox(doc_frame)
+        file_explo.pack(side="left", fill = "y", padx=10, pady=10)
+        html_view = HtmlFrame(doc_frame)
+        html_view.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        
+        #Load Pages from the doc-directory
+        doc_path = "doc/"
+        files = [f for f in os.listdir(doc_path) if f.endswith(".html")] #List all html files and put into list
+        for f in files:
+            file_explo.insert("end", f) #Into ListBox
+            
+        #What Happens when selected
+        def on_select(event):
+            sel = file_explo.get(file_explo.curselection()) # get current selection
+            with open(os.path.join(doc_path, sel), "r") as html_file:
+                html_content = html_file.read()
+                html_view.load_file(html_content)
+                
+        file_explo.bind("<<ListboxSelect>>", on_select)
+        
         #Debug Message
-        logging.info("UI: Opened How to Use Page")
+        logging.info("UI: Opened Documentation Page")
 
     def show_settings(self):
         #Load Existings Settings
