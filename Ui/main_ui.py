@@ -5,7 +5,7 @@ from tkinter import N, ttk
 from tkinter import filedialog
 
 #for safing settings
-from dotenv import dotenv_values, load_dotenv, set_key
+#from dotenv import dotenv_values, load_dotenv, set_key
 from utils import env_handler
 #from utils.env_handler_OLD import update_env_entry
 #from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH

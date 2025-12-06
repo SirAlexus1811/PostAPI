@@ -6,3 +6,4 @@ git
 numpy
 tk
 matplotlib
+tkinterhtml
