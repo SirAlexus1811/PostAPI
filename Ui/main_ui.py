@@ -144,7 +144,7 @@ class PostAPIApp(tk.Tk):
             sel = file_explo.get(file_explo.curselection()) # get current selection
             with open(os.path.join(doc_path, sel), "r") as html_file:
                 html_content = html_file.read()
-                html_view.load_file(html_content)
+                html_view.load_html(html_content)
                 
         file_explo.bind("<<ListboxSelect>>", on_select)
         
