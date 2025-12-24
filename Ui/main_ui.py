@@ -1,5 +1,6 @@
 #from doctest import debug
 from codecs import escape_encode
+from curses.ascii import isdigit
 from pydoc import doc
 from re import A
 import tkinter as tk
@@ -128,25 +129,41 @@ class PostAPIApp(tk.Tk):
         doc_frame.pack(fill="both", expand=True)
         
         #Create two other frames inside Mainframe for List and HTML View
-        file_explo = tk.Listbox(doc_frame)
+        file_explo = ttk.Treeview(doc_frame)
         file_explo.pack(side="left", fill = "y", padx=10, pady=10)
         html_view = HtmlFrame(doc_frame)
         html_view.pack(side="right", fill="both", expand=True, padx=10, pady=10)
         
-        #Load Pages from the doc-directory
+        #Doc Path
         doc_path = "doc/"
-        files = [f for f in os.listdir(doc_path) if f.endswith(".html")] #List all html files and put into list
-        for f in files:
-            file_explo.insert("end", f) #Into ListBox
-            
+        
+        #Load Pages from the doc-directory
+        def insert_items(parent, path):
+            for entry in sorted(os.listdir(path)):
+                if entry.lower() == "css":
+                    continue
+                full_path = os.path.join(path, entry)
+                if os.path.isdir(full_path):
+                    node = file_explo.insert(parent, "end", text=entry, open=False)
+                    insert_items(node, full_path)
+                elif entry.endswith(".html"):
+                    file_explo.insert(parent, "end", text=entry, values=[full_path])
+            logging.info("UI_DOC: Loaded elements into treeview")
+        
+        insert_items("", doc_path)
+        
         #What Happens when selected
         def on_select(event):
-            sel = file_explo.get(file_explo.curselection()) # get current selection
-            with open(os.path.join(doc_path, sel), "r") as html_file:
-                html_content = html_file.read()
-                html_view.load_html(html_content)
-                
-        file_explo.bind("<<ListboxSelect>>", on_select)
+            sel = file_explo.focus()
+            file_path = file_explo.item(sel, "values")
+            if file_path:
+                with open(file_path[0], "r") as html_file:
+                    html_content = html_file.read()
+                    html_view.load_html(html_content)
+            logging.info(f"UI_DOC: Loaded {file_path}")
+        
+        #Binder
+        file_explo.bind("<<TreeviewSelect>>", on_select)
         
         #Debug Message
         logging.info("UI: Opened Documentation Page")
