@@ -1,3 +1,5 @@
+#No need for dotenv anymore lol
+
 import os
 import logging # For Logging Handler
 

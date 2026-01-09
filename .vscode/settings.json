@@ -2,17 +2,12 @@
     "python.analysis.typeCheckingMode": "standard",
     "python.analysis.autoImportCompletions": true,
     "python.analysis.autoSearchPaths": true,
-    "python.analysis.extraPaths": [
-        "./Ui",
-        "./utils",
-        "./Instagram",
-        "./Instagram/post"
-        ],    
+    "python.analysis.extraPaths": ["${workspaceFolder}"],    
     "python.languageServer": "Pylance",
     "python-envs.pythonProjects": [
         {
             "path": "",
-            "envManager": "ms-python.python:system",
+            "envManager": "ms-python.python:venv",
             "packageManager": "ms-python.python:pip"
         }
     ]
