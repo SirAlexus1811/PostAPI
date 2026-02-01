@@ -20,6 +20,9 @@ import os # For Logfile saving and path handling
 import logging
 from utils.tkinter_log_handler import TkinterLogHandler
 
+#stop the freeze breeze
+import threading
+
 #For Account Management
 import json
 #ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 

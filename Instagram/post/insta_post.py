@@ -149,15 +149,22 @@ class instagram_poster:
 
     def postPicOnInstagram(self):
         #Prepare Upload and get media ID; media uri not needed for pictures
-        conatiner_id, conatiner_uri = self.create_Up_URL("image")
-        if not conatiner_id:
+        container_id, conatiner_uri = self.create_Up_URL("image")
+        if not container_id:
             logging.error("INSTAGRAM_POSTER: Got no Media-ID, Abortion.")
+            return False
+
+        #Status checkup
+        try:
+            self.wait_for_media_ready(container_id)
+        except Exception as e:
+            logging.error(f"Error at status checkup: {e}")
             return False
 
         #Publish Media
         publish_url = f"https://graph.instagram.com/v24.0/{self.ig_id}/media_publish"
         params = {
-            "creation_id": conatiner_id,
+            "creation_id": container_id,
             "access_token": self.access_token
         }
         response = requests.post(publish_url, params=params)
