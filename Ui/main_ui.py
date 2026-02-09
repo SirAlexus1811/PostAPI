@@ -30,9 +30,20 @@ import json
 #Env Path Settings Not needed because first instance of env handler load this settings file
 #SETTINGS_ENV_PATH = ".env_program/settings.env"
 
+#for Select All in the Ui
+def select_all(event):
+        event.widget.select_range(0, 'end')
+        event.widget.icursor('end')
+        return 'break'
+
 class PostAPIApp(tk.Tk):
     def __init__(self, debug_handler, controller):
         super().__init__()
+        
+        #Select all
+        self.bind_class("Entry", "<Control-a>", select_all)
+        self.bind_class("Entry", "<Control-A>", select_all)
+        
         self.title("Post API App")
         self.geometry("1200x800")
 
@@ -473,7 +484,7 @@ class PostAPIApp(tk.Tk):
 
             popup = tk.Toplevel(self)
             popup.title("Accounts-File is missing")
-            popup.geometry("500x500")
+            popup.geometry("600x500")
             tk.Label(popup, text=f"The File '{filepath}' does not exist.\nCreate New File?", font=("Arial", 12)).pack(pady=20)
             tk.Button(popup, text="Yes", command=create_file).pack(side="left", padx=20)
             tk.Button(popup, text="No", command=popup.destroy).pack(side="right", padx=20)
@@ -517,7 +528,7 @@ class PostAPIApp(tk.Tk):
         # Create a new window for account selection
         win = tk.Toplevel(self)
         win.title("Select Accounts")
-        win.geometry("500x500")
+        win.geometry("600x500")
 
         logging.info("UI_TL1: Opened Select Account Window")
 
@@ -551,23 +562,26 @@ class PostAPIApp(tk.Tk):
         #Open Window and configure it
         win = tk.Toplevel(self)
         win.title("Add Account")
-        win.geometry("500x500")
+        win.geometry("600x500")
 
         logging.info("UI_TL1: Opened Add Account Window")
 
         tk.Label(win, text="Add Instagram Account", font=("Arial", 14)).pack(pady=10)
         
-        tk.Label(win, text="Username:").pack()
-        username_entry = tk.Entry(win, width=30)
-        username_entry.pack(pady=5)
+        content_frame = tk.Frame(win)
+        content_frame.pack(fill="x", padx=30)
+        
+        tk.Label(content_frame, text="Username:").pack()
+        username_entry = tk.Entry(content_frame, width=30)
+        username_entry.pack(pady=5, fill="x", expand=True)
 
-        tk.Label(win, text="Instagram ID:").pack()
-        ig_id_entry = tk.Entry(win, width=30)
-        ig_id_entry.pack(pady=5)
+        tk.Label(content_frame, text="Instagram ID:").pack()
+        ig_id_entry = tk.Entry(content_frame, width=30)
+        ig_id_entry.pack(pady=5, fill="x", expand=True)
 
-        tk.Label(win, text="Access Token:").pack()
-        token_entry = tk.Entry(win, width=30)
-        token_entry.pack(pady=5)
+        tk.Label(content_frame, text="Access Token:").pack()
+        token_entry = tk.Entry(content_frame, width=30)
+        token_entry.pack(pady=5, fill="x", expand=True)
 
         #Define Save for inside the window
         def save():
@@ -603,31 +617,34 @@ class PostAPIApp(tk.Tk):
         #Open New Window and configure it
         win = tk.Toplevel(self)
         win.title("Edit Account")
-        win.geometry("500x500")
+        win.geometry("600x500")
 
         logging.info("UI_TL1: Opened Edit Account Window")
 
         tk.Label(win, text="Edit Instagram Account", font=("Arial", 14)).pack(pady=10)
 
+        content_frame = tk.Frame(win)
+        content_frame.pack(fill="x", padx=30)
+
         #Combobox for Account Selection
-        tk.Label(win, text="Select Account:").pack()
+        tk.Label(content_frame, text="Select Account:").pack()
         usernames = [acc["username"] for acc in self.accounts]
         selected_var = tk.StringVar()
-        combo = ttk.Combobox(win, textvariable=selected_var, values=usernames, state="readonly", width=28)
-        combo.pack(pady=5)
+        combo = ttk.Combobox(content_frame, textvariable=selected_var, values=usernames, state="readonly", width=28)
+        combo.pack(pady=5, fill="x", expand=True)
 
         #Entry Fields
-        tk.Label(win, text="New Username:").pack()
-        username_entry = tk.Entry(win, width=30)
-        username_entry.pack(pady=5)
+        tk.Label(content_frame, text="New Username:").pack()
+        username_entry = tk.Entry(content_frame, width=30)
+        username_entry.pack(pady=5, fill="x", expand=True)
 
-        tk.Label(win, text="New Instagram ID:").pack()
-        ig_id_entry = tk.Entry(win, width=30)
-        ig_id_entry.pack(pady=5)
+        tk.Label(content_frame, text="New Instagram ID:").pack()
+        ig_id_entry = tk.Entry(content_frame, width=30)
+        ig_id_entry.pack(pady=5, fill="x", expand=True)
 
-        tk.Label(win, text="New Access Token:").pack()
-        token_entry = tk.Entry(win, width=30)
-        token_entry.pack(pady=5)
+        tk.Label(content_frame, text="New Access Token:").pack()
+        token_entry = tk.Entry(content_frame, width=30)
+        token_entry.pack(pady=5, fill="x", expand=True)
 
         def fill_fields(event):
             idx = combo.current()
@@ -679,15 +696,19 @@ class PostAPIApp(tk.Tk):
         #Open New Window and configure it
         win = tk.Toplevel(self)
         win.title("Delete Account")
-        win.geometry("500x500")
+        win.geometry("600x500")
 
         logging.info("UI_TL1: Opened Delete Account Window")
 
         tk.Label(win, text="Delete Instagram Account", font=("Arial", 14)).pack(pady=10)
+        
+        content_frame = tk.Frame(win)
+        content_frame.pack(fill="x", padx=30)
+        
         usernames = [acc["username"] for acc in self.accounts]
         selected_var = tk.StringVar()
-        combo = ttk.Combobox(win, textvariable=selected_var, values=usernames, state="readonly", width=28)
-        combo.pack(pady=10)
+        combo = ttk.Combobox(content_frame, textvariable=selected_var, values=usernames, state="readonly", width=28)
+        combo.pack(pady=10, fill="x", expand=True)
 
         def delete_selected():
             idx = combo.current()
