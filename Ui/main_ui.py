@@ -11,7 +11,7 @@ from tkinterweb import HtmlFrame
 
 #for safing settings
 #from dotenv import dotenv_values, load_dotenv, set_key
-from utils import env_handler
+#from utils import env_handler
 #from utils.env_handler_OLD import update_env_entry
 #from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH
 import os # For Logfile saving and path handling
@@ -758,6 +758,8 @@ class PostAPIApp(tk.Tk):
         
         #Debug Message
         logging.info(f"UI: Beginn Posting Image: {insta_media} with caption: {insta_cap}.......")
+
+        threads = []
 
         #This is where the Instagram Poster Class does its job
         for acc in self.selected_accounts:
