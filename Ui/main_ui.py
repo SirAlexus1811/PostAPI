@@ -729,6 +729,8 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI_TL1: Del Account Window finished and account deleted")
 
+##########################
+
     def post_image(self):
         #Get Values from Entries
         insta_cap = self.ig_caption_entry.get().strip()
@@ -774,6 +776,8 @@ class PostAPIApp(tk.Tk):
                 self.controller.instagram_poster.postPicOnInstagram()
             elif media_type == "video":
                 self.controller.instagram_poster.postReelOnInstagram()
+
+####################
 
     #Exit Func
     def exit_app(self):

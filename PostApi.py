@@ -8,8 +8,8 @@ from utils.env_handler import EnvHandler
 #Import for global Git_Handler
 from utils.git_handler import GitHandler
 
-#Import for global Instagram_Poster
-from Instagram.post.insta_post import instagram_poster
+#Import for global postGnomeController
+from PostGnomeController.postGnomeController import postGnomeController
 
 #Logging imports
 from utils.tkinter_log_handler import TkinterLogHandler
@@ -51,7 +51,7 @@ class PostAPIController:
         # Debug Message
         logging.info("Ctr: EnvHandler started with env path: {}".format(self.env_handler.env_fPath))
 
-    #Start Git_Handler
+    #Start Git_Handler(...)
     def startGitHandler(self):
         if self.env_handler is not None:
             self.env_handler.load(".env_program/git.env")  # Ensure the environment is loaded before initializing GitHandler
@@ -69,7 +69,7 @@ class PostAPIController:
     #Start Instagram Poster
     def startInstagramPoster(self):
         # Create an instance of the instagram_poster class
-        self.instagram_poster = instagram_poster(self.env_handler, self.git_handler)
+        self.postGnomeController = postGnomeController(self.env_handler, self.git_handler)
         # Debug Message
         logging.info("Ctr: Instagram Poster started")
 
