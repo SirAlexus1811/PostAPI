@@ -1,18 +1,19 @@
 #Stop the freeze breeze with threading. Each PostGnome has its own thread
 import threading
 from xmlrpc.client import APPLICATION_ERROR
+
 #import the GNOMESS
 import PostGnomeController.Instagram.instaGnome as instaGnome
+
 #import env and git handler so we can create one instance for one thread
 from utils.env_handler import EnvHandler
 from utils.git_handler import GitHandler
+
 #Logging imports
 import logging
 
 class postGnomeController:
-    def __init__(self):# env_handler, git_handler):
-        #self.env_handler_single = env_handler #not needed cause we wont use a single gnome we'll always make at least 1 thread
-        #self.git_handler_single = git_handler
+    def __init__(self):
         self.git_lock = threading.Lock() #Lock for synchronizing access to Git functions (maybe helps the threads to run parallel)
         self.env_handlers = []
         self.git_handlers = []

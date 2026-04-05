@@ -3,7 +3,6 @@ import os
 import shutil
 import requests
 import time
-#from numpy import info
 
 #Gnome Class that will exist inside each thread and executes the actual posting
 class instaGnome:
@@ -30,7 +29,6 @@ class instaGnome:
     #This Function will mvoe the picture from the UI into the git and creates (maybe return) the rawgithubusercontent link
     def uploadPicture2Git(self, filepath):
         with self.git_lock:
-            #Set IMAGE_URL_LOCAL from Filepath
             self.IMAGE_URL_LOCAL = filepath
             
             #Repo Config

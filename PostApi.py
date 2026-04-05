@@ -69,16 +69,7 @@ class PostAPIController:
     def startPostGnomeController(self):
         self.PGC = postGnomeController()
         logging.info("Ctr: postGnomeController started")
-    
-    '''
-    #Start Instagram Poster
-    def startInstagramPoster(self):
-        # Create an instance of the instagram_poster class
-        self.postGnomeController = postGnomeController(self.env_handler, self.git_handler)
-        # Debug Message
-        logging.info("Ctr: Instagram Poster started")
-    '''
-
+        
     # Runs the main application loop
     def run(self):
         app = PostAPIApp(self.debug_handler, controller=self)
