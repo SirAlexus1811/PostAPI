@@ -1,5 +1,6 @@
 #Stop the freeze breeze with threading. Each PostGnome has its own thread
 import threading
+from xmlrpc.client import APPLICATION_ERROR
 #import the GNOMESS
 import Instagram.instaGnome as instaGnome
 #import env and git handler so we can create one instance for one thread
@@ -24,15 +25,20 @@ class postGnomeController:
         "2" = finished; "✔"
         "3" = error;    "✖"
         '''
-        
-    def postingGnomeInsta(self, number, account, envH, gitH):
+    #Creates the Gnome that executes the posting process for Instagram
+    def postingGnomeInsta(self, number, account, envH, gitH, cap, media, mtype, location):
+        self.thread_status[number] = "1" # Set status to running
         gnome = instaGnome.instaGnome(number, envH, gitH)
-        #Gnome Posting Logic here with call of post function etc
+        try:
+            gnome.post(account, cap, media, mtype, location)
+            self.thread_status[number] = "2" #Status finished after post is done
+        except Exception as e:
+            logging.error(f"PGCtr: Error in thread {number} for account {account}: {e}")
+            self.thread_status[number] = "3" #Status error if an exception occurs
         
-        pass
         
     #Called by UI to start the multiposting process for Instagram, creates threads for each posting gnome
-    def multipost_instagram(self, accounts):
+    def multipost_instagram(self, accounts, cap, media, mtype, location):
         #numerate accs in list and setup new instances of env and git handler for the gnome
         for idx, acc in enumerate(accounts):
             env_handler = EnvHandler(".env_program/settings.env")
@@ -56,11 +62,25 @@ class postGnomeController:
             #Create and start the thread
             t = threading.Thread(
                 target=self.postingGnomeInsta,
-                args=(idx, acc, env_handler, git_handler)
+                args=(idx, acc, env_handler, git_handler, cap, media, mtype, location)
             )
             t.start()
             self.threads.append(t)
+            logging.info(f"PGCtr: Started thread {idx} for account {acc}")
 
     #Returns true or false wether there are still threads running, must be called by UI main window
-    def wait_for_threads(self):
-        
+    #tk_root is needed so we can update UI and the checking interval is in ms
+    def wait_for_threads(self, callback=None, interval = 500, tk_root=None):
+        alive = any(t.is_alive() for t in self.threads)
+        if alive: # Will be true if any thread is alive
+            if tk_root:
+                tk_root.after(interval, lambda: self.wait_for_threads(interval, tk_root)) # Check again after the specified interval
+        else:
+            logging.info("PGCtr: All threads have finished.")
+            #Save Clear all the handlers and threads
+            self.env_handlers.clear()
+            self.git_handlers.clear()
+            self.threads.clear()
+            if callback:
+                callback() # Call the callback function if provided
+            

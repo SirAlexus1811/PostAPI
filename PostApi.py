@@ -32,7 +32,7 @@ class PostAPIController:
         self.checkRequirements()
         self.startEnvHandler()
         self.startGitHandler()
-        self.startInstagramPoster()
+        self.startPostGnomeController()
         
     #Starts the logger - Will be called on start
     def startLogger(self):
@@ -65,13 +65,19 @@ class PostAPIController:
         )
         #Debug Message
         logging.info("Ctr: GitHandler started with repo path: {}".format(self.git_handler.repo_path))
-
+    
+    def startPostGnomeController(self):
+        self.PGC = postGnomeController()
+        logging.info("Ctr: postGnomeController started")
+    
+    '''
     #Start Instagram Poster
     def startInstagramPoster(self):
         # Create an instance of the instagram_poster class
         self.postGnomeController = postGnomeController(self.env_handler, self.git_handler)
         # Debug Message
         logging.info("Ctr: Instagram Poster started")
+    '''
 
     # Runs the main application loop
     def run(self):

@@ -20,8 +20,8 @@ import os # For Logfile saving and path handling
 import logging
 from utils.tkinter_log_handler import TkinterLogHandler
 
-#stop the freeze breeze
-import threading
+#Thread Matrix Monitor
+from Ui.ThreadMatrix import ThreadMatrix
 
 #For Account Management
 import json
@@ -299,7 +299,7 @@ class PostAPIApp(tk.Tk):
         tk.Button(frame_insert, text="Select Accounts", command=self.open_account_selection).pack(pady=5)
 
         # Post-Button
-        tk.Button(frame_insert, text="Post", command=self.post_image).pack(pady=20)
+        tk.Button(frame_insert, text="Post", command=self.startPostInsta).pack(pady=20)
 
         # Right Side: Account-Table
         frame_accounts = tk.Frame(self.content_frame)
@@ -729,8 +729,23 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI_TL1: Del Account Window finished and account deleted")
 
+    #Starts the pOsting process (instagram)
+    def startPostInsta(self):
+        #Strip all the needed data from the UI
+        insta_cap = self.ig_caption_entry.get().strip()
+        insta_media = self.ig_image_path.get().strip()
+        media_type = self.media_type.get()
+        filepath = self.ig_image_path.get()
+        selected_accounts = self.selected_accounts
+        
+        self.controller.PGC.multipost_instagram(selected_accounts, insta_cap, insta_media, media_type, filepath)
+        # Matrix-Fenster öffnen
+        num_threads = len(selected_accounts)
+        rows = cols = int(num_threads ** 0.5) + 1  # z.B. 10x10 für 100 Threads
+        self.matrix_window = ThreadMatrix(self, self.controller.PGC, rows=rows, cols=cols)
+    
 ##########################
-
+    '''
     def post_image(self):
         #Get Values from Entries
         insta_cap = self.ig_caption_entry.get().strip()
@@ -776,7 +791,7 @@ class PostAPIApp(tk.Tk):
                 self.controller.instagram_poster.postPicOnInstagram()
             elif media_type == "video":
                 self.controller.instagram_poster.postReelOnInstagram()
-
+    '''
 ####################
 
     #Exit Func
