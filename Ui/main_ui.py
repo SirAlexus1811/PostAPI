@@ -9,26 +9,18 @@ from tkinter import filedialog
 
 from tkinterweb import HtmlFrame
 
-#for safing settings
-#from dotenv import dotenv_values, load_dotenv, set_key
-from utils import env_handler
-#from utils.env_handler_OLD import update_env_entry
-#from utils.git_handler_OLD import ENV_PATH as GIT_ENV_PATH
 import os # For Logfile saving and path handling
 
 #For Logging
 import logging
 from utils.tkinter_log_handler import TkinterLogHandler
 
-#stop the freeze breeze
-import threading
+#Thread Matrix Monitor
+from Ui.ThreadMatrix import ThreadMatrix
+import math
 
 #For Account Management
 import json
-#ACCOUNTS_PATH = "data/accounts.json"  # Path to the accounts file, its safer to use this program as client to a docker server 
-
-#Env Path Settings Not needed because first instance of env handler load this settings file
-#SETTINGS_ENV_PATH = ".env_program/settings.env"
 
 #for Select All in the Ui
 def select_all(event):
@@ -93,7 +85,7 @@ class PostAPIApp(tk.Tk):
         self.buttons = []
         menu_items = [
             ("PostAPI Menu", self.show_Menu),  # Title
-            ("1. Documentation", self.show_doc),  # Documentation
+            ("1. Documentation", self.show_doc),
             ("2. Settings", self.show_settings),
             ("3. Instagram", self.show_instagram),
             ("4. TikTok", self.show_tiktok),
@@ -279,16 +271,13 @@ class PostAPIApp(tk.Tk):
         tk.Radiobutton(frame_media, text="Reel", variable=self.media_type, value="video").pack(side="left")
 
         # Filepath (Local URL)
-        tk.Label(frame_insert, text="Picture Filepath:").pack()
+        tk.Label(frame_insert, text="Media Filepath:").pack()
         self.ig_image_path = tk.StringVar()
         frame_file = tk.Frame(frame_insert)
         frame_file.pack(pady=5)
-        #tk.Label(frame_file, text="Picture Filepath:").pack(side="left")
         self.ig_image_entry = tk.Entry(frame_file, textvariable=self.ig_image_path, width=40, state="readonly")
         self.ig_image_entry.pack(side="left", padx=5)
         tk.Button(frame_file, text="Browse...", command=self.browse_image_file).pack(side="left")
-        #self.ig_image_entry = tk.Entry(frame_insert, width=50)
-        #self.ig_image_entry.pack(pady=5)
 
         # Caption
         tk.Label(frame_insert, text="Caption:").pack()
@@ -299,7 +288,7 @@ class PostAPIApp(tk.Tk):
         tk.Button(frame_insert, text="Select Accounts", command=self.open_account_selection).pack(pady=5)
 
         # Post-Button
-        tk.Button(frame_insert, text="Post", command=self.post_image).pack(pady=20)
+        tk.Button(frame_insert, text="Post", command=self.startPostInsta).pack(pady=20)
 
         # Right Side: Account-Table
         frame_accounts = tk.Frame(self.content_frame)
@@ -384,7 +373,7 @@ class PostAPIApp(tk.Tk):
             for msg in TkinterLogHandler.log_history:
                 debug_text.insert("end", msg + "\n")
             debug_text.config(state="disabled")
-            # Optional: Logging auch auf dieses Widget umleiten
+            
             if self.debug_handler is not None:
                 self.debug_handler.set_widget(debug_text)
 
@@ -404,10 +393,6 @@ class PostAPIApp(tk.Tk):
             self.controller.env_handler.setV("GIT_USERNAME", git_username)
             self.controller.env_handler.setV("GIT_EMAIL", git_email)
             self.controller.env_handler.setV("REPO_PATH", local_repo_path)
-            
-            #update_env_entry(GIT_ENV_PATH, "GIT_USERNAME", git_username)
-            #update_env_entry(GIT_ENV_PATH, "GIT_EMAIL", git_email)
-            #update_env_entry(GIT_ENV_PATH, "REPO_PATH", local_repo_path)
             # Remove previous messages
             for widget in self.frame_message.winfo_children():
                 widget.destroy()
@@ -422,7 +407,6 @@ class PostAPIApp(tk.Tk):
         debug_mode = self.debug_var.get()
         self.controller.env_handler.load(".env_program/settings.env")  # Ensure the environment is loaded before saving settings
         self.controller.env_handler.setV("DEBUG_MODE", str(debug_mode))  # Save the debug mode setting
-        #update_env_entry(SETTINGS_ENV_PATH, "DEBUG_MODE", str(debug_mode))
         # Remove previous messages
         for widget in self.frame_message.winfo_children():
             widget.destroy()
@@ -461,7 +445,6 @@ class PostAPIApp(tk.Tk):
 
     #Loads the Accounts from the accounts.json file
     def load_accounts(self):
-        #accounts = [] #Template var
         filepath = self.controller.env_handler.get("ACM_INSTA_PATH", "")
         #Load Instagram Accounts File
         if os.path.exists(filepath):
@@ -729,49 +712,21 @@ class PostAPIApp(tk.Tk):
         #Debug Message
         logging.info("UI_TL1: Del Account Window finished and account deleted")
 
-    def post_image(self):
-        #Get Values from Entries
+    #Starts the pOsting process (instagram)
+    def startPostInsta(self):
+        #Strip all the needed data from the UI
         insta_cap = self.ig_caption_entry.get().strip()
-        insta_media = self.ig_image_entry.get().strip()
+        insta_media = self.ig_image_path.get().strip()
         media_type = self.media_type.get()
         filepath = self.ig_image_path.get()
-        if not insta_cap or not insta_media:
-            logging.error("UI: Caption or Image path is empty.")
-            tk.Label(self.content_frame, text="Please fill in both fields.", fg="red").pack(pady=5)
-            return
-
-        # Medientyp prüfen
-        if media_type == "image":
-            if not insta_media.lower().endswith((".jpg", ".jpeg")):
-                tk.Label(self.content_frame, text="Please select a picture that is a .jpg or .jpeg!", fg="red").pack(pady=5)
-                logging.error("UI: Selected media is not a valid image file.")
-                return
-        elif media_type == "video":
-            if not insta_media.lower().endswith((".mp4", ".mov")):
-                tk.Label(self.content_frame, text="Please select a video, that is a .mp4 or .mov!", fg="red").pack(pady=5)
-                logging.error("UI: Selected media is not a valid video file.")
-                return
-
-        if not self.selected_accounts:
-            logging.warning("UI: No Accounts selected!")
-            return
+        selected_accounts = self.selected_accounts
         
-        #Debug Message
-        logging.info(f"UI: Beginn Posting Image: {insta_media} with caption: {insta_cap}.......")
-
-        #This is where the Instagram Poster Class does its job
-        for acc in self.selected_accounts:
-            logging.info(f"UI: Posting '{insta_media}' with caption '{insta_cap}' on account '{acc["username"]}'")
-    
-            #Call the Instagram Poster Class to handle the posting
-            self.controller.instagram_poster.setIG_ID(acc["IG_ID"])  # Set the first selected account as the IG_ID
-            self.controller.instagram_poster.setAT(acc["token"])  # Set the access token for the first selected account
-            self.controller.instagram_poster.uploadPicture2Git(filepath)
-            self.controller.instagram_poster.setupPost(insta_cap, insta_media)
-            if media_type == "image":
-                self.controller.instagram_poster.postPicOnInstagram()
-            elif media_type == "video":
-                self.controller.instagram_poster.postReelOnInstagram()
+        self.controller.PGC.multipost_instagram(selected_accounts, insta_cap, insta_media, media_type, filepath)
+        # Matrix-Fenster öffnen
+        num_threads = len(selected_accounts)
+        rows = math.ceil(num_threads ** 0.5)
+        cols = math.ceil(num_threads / rows)
+        self.matrix_window = ThreadMatrix(self, self.controller.PGC, rows=rows, cols=cols)
 
     #Exit Func
     def exit_app(self):

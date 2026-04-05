@@ -1,3 +1,5 @@
+#OLD SCRIPT TO GET IG_ID, NOT USED ANYMORE, BUT KEPT FOR REFERENCE
+
 import os
 from xmlrpc.client import ResponseError
 import requests                     #Used to send get request to GRAPH API

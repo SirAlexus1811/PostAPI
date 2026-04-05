@@ -16,6 +16,11 @@ class instagram_poster:
         self.env_handler = env_handler
         self.git_handler = git_handler
 
+        #Create empty cache Variables
+        self.ig_id = None
+        self.access_token = None
+
+    '''# Initial Setup really needed?
         #Load correct instagram.env
         self.env_handler.load(".env_program/instagram.env")
 
@@ -24,6 +29,7 @@ class instagram_poster:
         if not self.access_token or not self.ig_id:
             logging.error("INSTAGRAM_POSTER: ACCESS_TOKEN or IG_ACC_ID not found in environment variables.")
             raise ValueError("ACCESS_TOKEN or IG_ACC_ID not found!")
+    '''
 
     #Sets Picture related variables
     def setupPost(self, caption, img_path):
