@@ -2,7 +2,7 @@
 import threading
 from xmlrpc.client import APPLICATION_ERROR
 #import the GNOMESS
-import Instagram.instaGnome as instaGnome
+import PostGnomeController.Instagram.instaGnome as instaGnome
 #import env and git handler so we can create one instance for one thread
 from utils.env_handler import EnvHandler
 from utils.git_handler import GitHandler
@@ -11,12 +11,13 @@ import logging
 
 class postGnomeController:
     def __init__(self):# env_handler, git_handler):
-        #self.env_handler_single = env_handler # not needed cause we wont use a single gnome we'll always make at least 1 thread
+        #self.env_handler_single = env_handler #not needed cause we wont use a single gnome we'll always make at least 1 thread
         #self.git_handler_single = git_handler
+        self.git_lock = threading.Lock() #Lock for synchronizing access to Git functions (maybe helps the threads to run parallel)
         self.env_handlers = []
         self.git_handlers = []
         self.threads = []
-        self.thread_status = {} # Dictionary to keep track of thread statuses, e.g., {thread_id: "running" or "finished"}
+        self.thread_status = {} #Dictionary to keep track of thread statuses, e.g., {thread_id: "running" or "finished"}
         
         '''
         Quick note for the statuses and later representation in UI:
@@ -28,7 +29,7 @@ class postGnomeController:
     #Creates the Gnome that executes the posting process for Instagram
     def postingGnomeInsta(self, number, account, envH, gitH, cap, media, mtype, location):
         self.thread_status[number] = "1" # Set status to running
-        gnome = instaGnome.instaGnome(number, envH, gitH)
+        gnome = instaGnome.instaGnome(number, envH, gitH, self.git_lock) #Give the lock as parameter so every
         try:
             gnome.post(account, cap, media, mtype, location)
             self.thread_status[number] = "2" #Status finished after post is done

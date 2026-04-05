@@ -22,6 +22,7 @@ from utils.tkinter_log_handler import TkinterLogHandler
 
 #Thread Matrix Monitor
 from Ui.ThreadMatrix import ThreadMatrix
+import math
 
 #For Account Management
 import json
@@ -279,16 +280,13 @@ class PostAPIApp(tk.Tk):
         tk.Radiobutton(frame_media, text="Reel", variable=self.media_type, value="video").pack(side="left")
 
         # Filepath (Local URL)
-        tk.Label(frame_insert, text="Picture Filepath:").pack()
+        tk.Label(frame_insert, text="Media Filepath:").pack()
         self.ig_image_path = tk.StringVar()
         frame_file = tk.Frame(frame_insert)
         frame_file.pack(pady=5)
-        #tk.Label(frame_file, text="Picture Filepath:").pack(side="left")
         self.ig_image_entry = tk.Entry(frame_file, textvariable=self.ig_image_path, width=40, state="readonly")
         self.ig_image_entry.pack(side="left", padx=5)
         tk.Button(frame_file, text="Browse...", command=self.browse_image_file).pack(side="left")
-        #self.ig_image_entry = tk.Entry(frame_insert, width=50)
-        #self.ig_image_entry.pack(pady=5)
 
         # Caption
         tk.Label(frame_insert, text="Caption:").pack()
@@ -741,9 +739,9 @@ class PostAPIApp(tk.Tk):
         self.controller.PGC.multipost_instagram(selected_accounts, insta_cap, insta_media, media_type, filepath)
         # Matrix-Fenster öffnen
         num_threads = len(selected_accounts)
-        rows = cols = int(num_threads ** 0.5) + 1  # z.B. 10x10 für 100 Threads
+        rows = math.ceil(num_threads ** 0.5)
+        cols = math.ceil(num_threads / rows)
         self.matrix_window = ThreadMatrix(self, self.controller.PGC, rows=rows, cols=cols)
-    
 ##########################
     '''
     def post_image(self):
