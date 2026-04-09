@@ -287,8 +287,9 @@ class PostAPIApp(tk.Tk):
         # Account Selection
         tk.Button(frame_insert, text="Select Accounts", command=self.open_account_selection).pack(pady=5)
 
-        # Post-Button
-        tk.Button(frame_insert, text="Post", command=self.startPostInsta).pack(pady=20)
+        # Post-Button, this is a object in self so we can lock it to prevent spam
+        self.post_button = tk.Button(frame_insert, text="Post", command=self.startPostInsta)
+        self.post_button.pack(pady=20)
 
         # Right Side: Account-Table
         frame_accounts = tk.Frame(self.content_frame)
@@ -714,6 +715,8 @@ class PostAPIApp(tk.Tk):
 
     #Starts the pOsting process (instagram)
     def startPostInsta(self):
+        #Deactivate the post button for spam prevention
+        self.post_button.config(state="disabled")  # Button deaktivieren
         #Strip all the needed data from the UI
         insta_cap = self.ig_caption_entry.get().strip()
         insta_media = self.ig_image_path.get().strip()
