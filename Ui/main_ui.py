@@ -10,6 +10,7 @@ from tkinter import filedialog
 from tkinterweb import HtmlFrame
 
 import os # For Logfile saving and path handling
+import threading # for some toplayer windows like the debug window
 
 #For Logging
 import logging
@@ -19,8 +20,9 @@ from utils.tkinter_log_handler import TkinterLogHandler
 from Ui.ThreadMatrix import ThreadMatrix
 import math
 
-#For Account Management
+#For Account Management and checking
 import json
+from utils.tokenChecker import TokenChecker
 
 #for Select All in the Ui
 def select_all(event):
@@ -49,6 +51,9 @@ class PostAPIApp(tk.Tk):
         else:
             logging.error("UI: No valid Controller or env_handler passed!")
             raise ValueError("No valid Controller or env_handler passed!")
+        
+        #Setup the cool token checker var
+        self.token_checker_already_run = False
         
         # Set the icon if it exists
         icon_path = "assets/iconLIN.xbm"
@@ -298,9 +303,10 @@ class PostAPIApp(tk.Tk):
         tk.Label(frame_accounts, text="Accounts", font=("Arial", 14)).pack()
 
         # Table for Accounts
-        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "IG_ID", "Token"), show="headings", height=10)
+        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "IG_ID", "Status", "Token"), show="headings", height=10)
         self.account_tree.heading("Username", text="Username")
         self.account_tree.heading("IG_ID", text="Instagram ID")
+        self.account_tree.heading("Status", text="Status")
         self.account_tree.heading("Token", text="Access Token")
         self.account_tree.pack(pady=5)
 
@@ -313,6 +319,11 @@ class PostAPIApp(tk.Tk):
 
         # Load Accounts into table
         self.load_accounts()
+        
+        #Run the token checker but only once
+        if not self.token_checker_already_run:
+            self.run_token_checker()
+            self.token_checker_already_run = True
 
         #List for Selcted Accounts
         tk.Label(frame_accounts, text="Selected Accounts:", font=("Arial", 12)).pack(pady=5)
@@ -370,6 +381,28 @@ class PostAPIApp(tk.Tk):
             win.geometry("800x400")
             debug_text = tk.Text(win, height=20, width=80, state="normal", bg="#222", fg="#0f0")
             debug_text.pack(fill="both", expand=True)
+            #Show loading
+            debug_text.insert("end", "Loading log history...\n")
+            
+            def load_log_into_thread():
+                # Collect all messages so far
+                all_logs = "\n".join(TkinterLogHandler.log_history)
+                
+                def update_ui():
+                    debug_text.config(state="normal")
+                    debug_text.delete("1.0", "end")
+                    debug_text.insert("end", all_logs)
+                    debug_text.config(state="disabled")
+                    
+                    if self.debug_handler is not None:
+                        self.debug_handler.set_widget(debug_text)
+                
+                self.after(0,update_ui)
+            # Starte das Laden in einem separaten Thread
+            thread = threading.Thread(target=load_log_into_thread, daemon=True)
+            thread.start()
+            
+            '''
             debug_text.delete("1.0", "end")
             for msg in TkinterLogHandler.log_history:
                 debug_text.insert("end", msg + "\n")
@@ -377,7 +410,7 @@ class PostAPIApp(tk.Tk):
             
             if self.debug_handler is not None:
                 self.debug_handler.set_widget(debug_text)
-
+            '''
         tk.Button(self.content_frame, text="Open Debug-Console in extra window", command=open_debug_window).pack(pady=10)
 
         logging.info("UI: Opened Debug Console")
@@ -429,7 +462,7 @@ class PostAPIApp(tk.Tk):
         self.build_menu()  # Rebuild the menu to reflect changes
         
         #Debug Message
-        logging.info("UI: Saved ACM Settings")
+        logging.info("UI: Saved ACM Settings")   
     
     #File Selection
     def browse_image_file(self):
@@ -447,6 +480,13 @@ class PostAPIApp(tk.Tk):
     #Loads the Accounts from the accounts.json file
     def load_accounts(self):
         filepath = self.controller.env_handler.get("ACM_INSTA_PATH", "")
+        old_status = {}
+        
+        #Save the old statuses pre loading
+        if hasattr(self, "accounts"):
+            for acc in self.accounts:
+                old_status[acc.get("username")] = acc.get("Status", "Not Checked")
+
         #Load Instagram Accounts File
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
@@ -474,9 +514,18 @@ class PostAPIApp(tk.Tk):
             tk.Button(popup, text="No", command=popup.destroy).pack(side="right", padx=20)
             return
 
+        #Here the list should be loaded 
+        for acc in self.accounts:
+            username = acc.get("username")
+            if username in old_status:
+                acc["Status"] = old_status[username]
+            else:
+                acc["Status"] = "Not Checked"
+        
         #Clear Table
         self.account_tree.delete(*self.account_tree.get_children())
         logging.info("UI: Cleared Account Table")
+        
         #Insert loaded accounts from Json file
         for acc in self.accounts:
             self.account_tree.insert(
@@ -485,10 +534,31 @@ class PostAPIApp(tk.Tk):
                 values=(
                     acc.get("username", "Unknown"),
                     acc.get("IG_ID", "Not Set"),
+                    acc.get("Status", "Not Checked"),
                     acc.get("token", "No Token")
                 )
             )
         logging.info("UI: Loaded Accounts into Table")
+        
+    #Runs the checker, should be run 
+    def run_token_checker(self):
+        #Now lets run the token checker
+        logging.info("UI: Starting Token Checker for loaded accounts")
+        #callback func (out of order atm)
+        def update_status_in_tree(idx, is_valid):
+            def update():
+                try:
+                    children = self.account_tree.get_children()
+                    if idx < len(children):
+                        item_id = children[idx]
+                        symbol = "✔" if is_valid else "✖"
+                        self.account_tree.set(item_id, "Status", symbol) #directly into treeview
+                        self.accounts[idx]["Status"] = symbol #also update in list
+                except Exception as e:
+                    logging.error(f"UI: Error updating token status in treeview for index {idx}: {e}")
+            self.after(0, update)  # Schedule the update in the main thread
+        checker = TokenChecker(self.accounts, update_status_in_tree)
+        checker.check_all_tokens()
 
     #Update the selected accounts label
     def update_selected_accounts_label(self):
