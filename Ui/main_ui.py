@@ -6,7 +6,11 @@ from re import A
 import tkinter as tk
 from tkinter import N, ttk
 from tkinter import filedialog
+from tkcalendar import DateEntry
+from datetime import datetime, timedelta
+from turtle import left, width
 
+from numpy import pad
 from tkinterweb import HtmlFrame
 
 import os # For Logfile saving and path handling
@@ -39,7 +43,7 @@ class PostAPIApp(tk.Tk):
         self.bind_class("Entry", "<Control-A>", select_all)
         
         self.title("Post API App")
-        self.geometry("1200x800")
+        self.geometry("1800x800")
 
         #Set the given Attributes
         self.debug_handler = debug_handler
@@ -303,10 +307,11 @@ class PostAPIApp(tk.Tk):
         tk.Label(frame_accounts, text="Accounts", font=("Arial", 14)).pack()
 
         # Table for Accounts
-        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "IG_ID", "Status", "Token"), show="headings", height=10)
+        self.account_tree = ttk.Treeview(frame_accounts, columns=("Username", "IG_ID", "Status", "expdate","Token"), show="headings", height=10)
         self.account_tree.heading("Username", text="Username")
         self.account_tree.heading("IG_ID", text="Instagram ID")
         self.account_tree.heading("Status", text="Status")
+        self.account_tree.heading("expdate", text="Expires in")
         self.account_tree.heading("Token", text="Access Token")
         self.account_tree.pack(pady=5)
 
@@ -316,6 +321,7 @@ class PostAPIApp(tk.Tk):
         tk.Button(btn_frame, text="Add", command=self.add_account).pack(side="left", padx=2)
         tk.Button(btn_frame, text="Edit", command=self.edit_account).pack(side="left", padx=2)
         tk.Button(btn_frame, text="Delete", command=self.delete_account).pack(side="left", padx=2)
+        tk.Button(btn_frame, text="Renew Tokens", command=self.renew_tokens).pack(side="left", padx=2)
 
         # Load Accounts into table
         self.load_accounts()
@@ -504,7 +510,7 @@ class PostAPIApp(tk.Tk):
                 self.accounts = []
                 logging.info(f"UI: Created new accounts file at {filepath}")
                 popup.destroy()
-                self.load_accounts()  # Datei jetzt laden
+                self.load_accounts()  # Load file now
 
             popup = tk.Toplevel(self)
             popup.title("Accounts-File is missing")
@@ -535,6 +541,7 @@ class PostAPIApp(tk.Tk):
                     acc.get("username", "Unknown"),
                     acc.get("IG_ID", "Not Set"),
                     acc.get("Status", "Not Checked"),
+                    acc.get("expdate", "Not Set"),
                     acc.get("token", "No Token")
                 )
             )
@@ -543,8 +550,8 @@ class PostAPIApp(tk.Tk):
     #Runs the checker, should be run 
     def run_token_checker(self):
         #Now lets run the token checker
-        logging.info("UI: Starting Token Checker for loaded accounts")
-        #callback func (out of order atm)
+        logging.info("UI: Starting TokenChecker for loaded accounts")
+        #callback func
         def update_status_in_tree(idx, is_valid):
             def update():
                 try:
@@ -636,15 +643,25 @@ class PostAPIApp(tk.Tk):
         tk.Label(content_frame, text="Access Token:").pack()
         token_entry = tk.Entry(content_frame, width=30)
         token_entry.pack(pady=5, fill="x", expand=True)
+        
+        tk.Label(content_frame, text="Expiry Date:").pack()
+        date_entry = DateEntry(content_frame, width=30)
+        date_entry.pack(pady=5, fill="x", expand=True)
 
         #Define Save for inside the window
         def save():
             username = username_entry.get().strip()
             ig_id = ig_id_entry.get().strip()
             token = token_entry.get().strip()
+            expdate = date_entry.get_date()
+            if not expdate:
+                expdate = "Not set"
+            else:
+                expdate = expdate.isoformat()
+            
             if username and token:
                 # Add the new account to the accounts list
-                self.accounts.append({"username": username, "IG_ID": ig_id, "token": token})
+                self.accounts.append({"username": username, "IG_ID": ig_id, "token": token, "expdate": expdate})
                 # Save the updated accounts to the file
                 with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
                     json.dump(self.accounts, f, indent=4)
@@ -699,6 +716,10 @@ class PostAPIApp(tk.Tk):
         tk.Label(content_frame, text="New Access Token:").pack()
         token_entry = tk.Entry(content_frame, width=30)
         token_entry.pack(pady=5, fill="x", expand=True)
+        
+        tk.Label(content_frame, text="New Expiry Date:").pack()
+        date_entry = DateEntry(content_frame, width=30)
+        date_entry.pack(pady=5, fill="x", expand=True)
 
         def fill_fields(event):
             idx = combo.current()
@@ -706,9 +727,11 @@ class PostAPIApp(tk.Tk):
                 username_entry.delete(0, tk.END)
                 ig_id_entry.delete(0, tk.END)
                 token_entry.delete(0, tk.END)
+                date_entry.delete(0, tk.END)
                 username_entry.insert(0, self.accounts[idx]["username"])
                 ig_id_entry.insert(0, self.accounts[idx]["IG_ID"])
                 token_entry.insert(0, self.accounts[idx]["token"])
+                date_entry.insert(0, self.accounts[idx]["expdate"])
             logging.info("UI_TL1: Filled fields with selected account data")
         
         combo.bind("<<ComboboxSelected>>", fill_fields)
@@ -723,10 +746,12 @@ class PostAPIApp(tk.Tk):
             new_username = username_entry.get().strip()
             new_ig_id = ig_id_entry.get().strip()
             new_token = token_entry.get().strip()
-            if new_username and new_token:
+            new_expdate = date_entry.get_date()
+            if new_username or new_token or new_expdate:
                 self.accounts[idx]["username"] = new_username
                 self.accounts[idx]["IG_ID"] = new_ig_id
                 self.accounts[idx]["token"] = new_token
+                self.accounts[idx]["expdate"] = new_expdate.isoformat()
                 with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
                     json.dump(self.accounts, f, indent=4)
                 self.load_accounts()
@@ -782,6 +807,36 @@ class PostAPIApp(tk.Tk):
 
         #Debug Message
         logging.info("UI_TL1: Del Account Window finished and account deleted")
+
+    def renew_tokens(self):
+        logging.info("UI: Starting TokenChecker for renewing tokens")
+        def message(idx, is_renewed, data):
+            #Send log message
+            def post():
+                if is_renewed:
+                    logging.info(f"UI: Token of index {idx} is renewed!")
+                else:
+                    logging.info(f"UI: Token of indes {idx} is not renewed or something went wrong!")
+            self.after(0, post)
+            
+            #Collect data
+            logging.info(f"UI: API response data: Type: {data.get('token_type')}; Expires in: {data.get('expires_in')} seconds; Token: {data.get('access_token')}")
+            
+            #Convert the seconds from data to date
+            seconds = data.get("expires_in")
+            start_date = datetime.now()
+            end_date = start_date + timedelta(seconds=seconds)
+            
+            #Save to accounts.json
+            def save():
+                self.accounts[idx]["expdate"] = end_date.isoformat()
+                with open(self.controller.env_handler.get("ACM_INSTA_PATH", ""), "w") as f:
+                    json.dump(self.accounts, f, indent=4)
+            self.after(0, save)
+            self.load_accounts()
+            
+        checker = TokenChecker(self.accounts, message)
+        checker.renew_all_tokens()
 
     #Starts the pOsting process (instagram)
     def startPostInsta(self):

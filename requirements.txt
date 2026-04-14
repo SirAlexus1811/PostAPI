@@ -6,3 +6,4 @@ numpy
 tk
 matplotlib
 tkinterhtml
+tkcalendar
