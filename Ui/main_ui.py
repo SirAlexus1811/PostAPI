@@ -322,6 +322,7 @@ class PostAPIApp(tk.Tk):
         tk.Button(btn_frame, text="Edit", command=self.edit_account).pack(side="left", padx=2)
         tk.Button(btn_frame, text="Delete", command=self.delete_account).pack(side="left", padx=2)
         tk.Button(btn_frame, text="Renew Tokens", command=self.renew_tokens).pack(side="left", padx=2)
+        tk.Button(btn_frame, text="Refresh Statuses", command=self.run_token_checker).pack(side="left", padx=2)
 
         # Load Accounts into table
         self.load_accounts()

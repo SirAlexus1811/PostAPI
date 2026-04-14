@@ -66,3 +66,4 @@ class TokenChecker:
             
         #Callback back to UI
         self.callback(idx, is_valid)
+        
